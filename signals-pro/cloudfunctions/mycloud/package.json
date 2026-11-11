@@ -1,0 +1,9 @@
+{
+  "name": "mycloud",
+  "version": "1.0.0",
+  "description": "信号与系统 Pro · 免登录身份 / 学习档案同步 / 排行榜 / 教材切片检索",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

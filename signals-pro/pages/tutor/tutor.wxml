@@ -1,0 +1,127 @@
+<view class="page no-tab tut {{theme}}">
+  <!-- 讲解方式 -->
+  <scroll-view scroll-x class="modes" enhanced show-scrollbar="{{false}}">
+    <view
+      class="mode {{mode === item.id ? 'on' : ''}}"
+      wx:for="{{modes}}"
+      wx:key="id"
+      bindtap="setMode"
+      data-k="{{item.id}}"
+    >
+      <text class="md-ic">{{item.icon}}</text>
+      <text class="md-nm">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 对话 -->
+  <scroll-view
+    class="chat"
+    scroll-y
+    scroll-into-view="{{scrollTo}}"
+    scroll-with-animation
+    enhanced
+    show-scrollbar="{{false}}"
+  >
+    <!-- 空态：热门问题 + 主题 -->
+    <block wx:if="{{msgs.length <= 1}}">
+      <view class="hot">
+        <view class="hot-t">大家常问</view>
+        <view class="hot-q" wx:for="{{hot}}" wx:key="q" bindtap="tapHot" data-i="{{index}}">
+          <text class="hq-dot"></text>
+          <text class="hq-t">{{item.q}}</text>
+          <text class="hq-go">›</text>
+        </view>
+      </view>
+      <view class="hot">
+        <view class="hot-t">按主题直接问</view>
+        <view class="row wrap">
+          <view
+            class="chip th-chip"
+            wx:for="{{topics}}"
+            wx:key="id"
+            bindtap="tapTheme"
+            data-id="{{item.id}}"
+          >{{item.title}}</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 消息 -->
+    <view wx:for="{{msgs}}" wx:key="id" id="msg-{{item.id}}" class="msg">
+      <block wx:if="{{item.role === 'user'}}">
+        <view class="u-row">
+          <view class="u-bubble">{{item.text}}</view>
+        </view>
+      </block>
+
+      <block wx:else>
+        <view class="b-row">
+          <image class="b-ava" src="/assets/theme/{{sticker}}.jpg" mode="aspectFill" />
+          <view class="b-card">
+            <view class="b-title" wx:if="{{item.title}}">{{item.title}}</view>
+            <view class="b-text" wx:if="{{item.text}}">{{item.text}}</view>
+
+            <block wx:for="{{item.blocks}}" wx:for-item="b" wx:for-index="bi">
+              <view wx:if="{{b.type === 'p'}}" class="b-p">{{b.text}}</view>
+
+              <view wx:elif="{{b.type === 'step'}}" class="b-step">
+                <text class="bs-no">{{b.index}}</text>
+                <text class="bs-t">{{b.text}}</text>
+              </view>
+
+              <view wx:elif="{{b.type === 'quote'}}" class="b-quote">{{b.text}}</view>
+
+              <view wx:elif="{{b.type === 'answer'}}" class="b-ans">
+                <text class="ba-k">答</text>
+                <text class="ba-v">{{b.text}}</text>
+              </view>
+
+              <view wx:elif="{{b.type === 'tip'}}" class="b-tip">
+                <text class="bt-k">口诀</text>
+                <text class="bt-v">{{b.text}}</text>
+              </view>
+
+              <block wx:elif="{{b.type === 'formula'}}">
+                <view
+                  class="b-fm"
+                  wx:for="{{b.list}}"
+                  wx:for-item="f"
+                  wx:key="id"
+                  bindtap="openFormula"
+                  data-id="{{f.id}}"
+                >
+                  <view class="bf-name">{{f.name}}</view>
+                  <view class="bf-math">
+                    <math src="{{f.math}}" size="{{30}}" />
+                  </view>
+                  <view class="bf-go">点一下复制纯文本</view>
+                </view>
+              </block>
+            </block>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="chat-pad"></view>
+  </scroll-view>
+
+  <!-- 输入 -->
+  <view class="input-bar">
+    <view class="ib-clear" bindtap="clear">清空</view>
+    <input
+      class="ib-input"
+      value="{{input}}"
+      placeholder="问点什么，例如：卷积为什么要翻转"
+      placeholder-class="ph"
+      confirm-type="send"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+    />
+    <view class="ib-send" bindtap="onConfirm">发送</view>
+  </view>
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

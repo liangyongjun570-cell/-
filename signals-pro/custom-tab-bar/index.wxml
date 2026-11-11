@@ -1,0 +1,13 @@
+<view class="tabbar {{theme}}">
+  <view
+    wx:for="{{list}}"
+    wx:key="path"
+    class="tab {{selected === index ? 'on' : ''}}"
+    data-idx="{{index}}"
+    bindtap="onTap"
+  >
+    <view class="tab-dot" wx:if="{{selected === index}}"></view>
+    <image class="tab-img" src="/assets/theme/{{item.img}}.jpg" mode="aspectFill" />
+    <text class="tab-text">{{item.text}}</text>
+  </view>
+</view>

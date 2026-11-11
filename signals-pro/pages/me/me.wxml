@@ -1,0 +1,283 @@
+<view class="page {{theme}}">
+  <!-- 跨 tab 跳进来的来源提示：switchTab 没有返回栈，这里补一条可点的回路 -->
+  <view class="back-bar" wx:if="{{back}}" bindtap="goBackTab">
+    <text class="bb-arrow">‹</text>
+    <text class="bb-t">返回{{back.label}}</text>
+    <text class="bb-hint" wx:if="{{back.hint}}">{{back.hint}}</text>
+  </view>
+
+  <!-- 档案头 -->
+  <view class="prof">
+    <image class="prof-img" src="{{avatarSrc}}" mode="aspectFill" />
+    <view class="grow">
+      <view class="row middle">
+        <text class="prof-name">{{nickname}}</text>
+        <text class="prof-edit" bindtap="openNick">完善资料</text>
+      </view>
+      <view class="row middle mt8">
+        <text class="prof-acc">{{account}}</text>
+        <text wx:if="{{isWx}}" class="prof-wx">微信登录</text>
+        <text wx:if="{{isGuest}}" class="prof-login" bindtap="go" data-k="login">登录 / 注册</text>
+      </view>
+      <view class="muted mt8">已坚持 {{days}} 天 · 完成 {{overall.done}}/{{overall.total}} 单元</view>
+    </view>
+  </view>
+
+  <view class="card ov mt20">
+    <view class="row between">
+      <text class="h3">总进度</text>
+      <text class="ov-p">{{overall.percent}}%</text>
+    </view>
+    <view class="progress mt12">
+      <view class="progress-fill" style="width: {{overall.percent}}%"></view>
+    </view>
+    <view class="row between mt12">
+      <text class="muted">{{overall.chaptersDone}} / 8 章完成</text>
+      <text class="muted">{{stats.topics}} 专题 · {{stats.formulas}} 公式</text>
+    </view>
+  </view>
+
+  <!-- 能力雷达 -->
+  <view class="section-head">
+    <view class="section-title">能力雷达</view>
+    <view class="section-more">按公式掌握度估算</view>
+  </view>
+  <view class="card radar-card">
+    <canvas type="2d" id="cvRadar" class="radar"></canvas>
+    <view class="radar-list">
+      <view class="rl" wx:for="{{radar}}" wx:key="key">
+        <view class="row between">
+          <text class="rl-n">{{item.name}}</text>
+          <text class="rl-v">{{item.value}}%</text>
+        </view>
+        <view class="progress mt8">
+          <view class="progress-fill" style="width: {{item.value}}%"></view>
+        </view>
+        <text class="rl-s">{{item.done}} / {{item.total}} 条公式</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数据 -->
+  <view class="section-head">
+    <view class="section-title">学习数据</view>
+  </view>
+  <view class="grid3 data-grid">
+    <view class="data">
+      <text class="d-n">{{stats.topics}}</text>
+      <text class="d-l">已学专题</text>
+    </view>
+    <view class="data">
+      <text class="d-n">{{stats.formulas}}</text>
+      <text class="d-l">已学公式</text>
+    </view>
+    <view class="data">
+      <text class="d-n">{{stats.notes}}</text>
+      <text class="d-l">笔记</text>
+    </view>
+    <view class="data">
+      <text class="d-n">{{stats.answered}}</text>
+      <text class="d-l">答题数</text>
+    </view>
+    <view class="data">
+      <text class="d-n">{{stats.rate}}%</text>
+      <text class="d-l">正确率</text>
+    </view>
+    <view class="data">
+      <text class="d-n">{{stats.wrong}}</text>
+      <text class="d-l">错题</text>
+    </view>
+  </view>
+
+  <!-- 排行榜 -->
+  <view class="section-head">
+    <view class="section-title">🏆 信号闯关刷题排行榜</view>
+    <view class="section-more">{{rankNote}}</view>
+  </view>
+  <view class="card rank-card">
+    <view class="rk-me" wx:if="{{rankMe}}">
+      <view class="rk-me-l">
+        <text class="rk-me-rank">#{{rankMe.rank}}</text>
+        <view class="rk-me-info">
+          <text class="rk-me-n">我的名次</text>
+          <text class="rk-me-s">{{rankMe.chDone}} 章完成 · 正确率 {{rankMe.rate}}% · {{rankMe.answered}} 题</text>
+        </view>
+      </view>
+      <text class="rk-me-sc">{{rankMe.score}}</text>
+    </view>
+
+    <view class="rk-row {{item.self ? 'self' : ''}}" wx:for="{{rankList}}" wx:key="rank">
+      <text class="rk-no {{item.rank <= 3 ? 'top' : ''}}">{{item.rank}}</text>
+      <image class="rk-av" src="/assets/pet/{{item.avatar}}.png" mode="aspectFit" />
+      <view class="rk-main">
+        <text class="rk-n">{{item.nickname}}{{item.self ? '（我）' : ''}}</text>
+        <text class="rk-s">{{item.chDone}} 章 · 答对 {{item.correct}}/{{item.answered}}</text>
+      </view>
+      <text class="rk-sc">{{item.score}}</text>
+    </view>
+
+    <view class="rk-foot">
+      <text class="rk-foot-t">{{cloudOn ? syncText : '本机存储 · 未联网'}}</text>
+      <text class="rk-foot-b" bindtap="syncNow">{{cloudOn ? '立即同步' : '了解云同步'}}</text>
+    </view>
+  </view>
+
+  <!-- 1v1 擂台（增量入口） -->
+  <view class="pk-bar" bindtap="goPk">
+    <view class="grow">
+      <view class="h3">⚔️ 信号擂台 · 1v1 抢答</view>
+      <view class="muted">{{pkTier}} · {{pkRp}} 段位分 · 已打 {{pkMatches}} 场</view>
+    </view>
+    <view class="pk-go">去对战</view>
+  </view>
+
+  <!-- 快捷 -->
+  <view class="section-head">
+    <view class="section-title">我的内容</view>
+  </view>
+  <view class="card">
+    <view class="cell" bindtap="go" data-k="records">
+      <view class="cell-icon ci-mint">记</view>
+      <view class="grow">
+        <view class="h3">学习记录</view>
+        <view class="muted">最近 30 条学习足迹</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="go" data-k="fav">
+      <view class="cell-icon ci-butter">★</view>
+      <view class="grow">
+        <view class="h3">我的收藏</view>
+        <view class="muted">{{stats.fav}} 条公式与专题</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="go" data-k="mistakes">
+      <view class="cell-icon ci-pink">错</view>
+      <view class="grow">
+        <view class="h3">错题本</view>
+        <view class="muted">{{stats.wrong}} 道待攻克</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="go" data-k="quiz">
+      <view class="cell-icon ci-violet">✓</view>
+      <view class="grow">
+        <view class="h3">智能题库</view>
+        <view class="muted">累计模考 {{stats.exams}} 次</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="go" data-k="tutor">
+      <view class="cell-icon ci-blue">?</view>
+      <view class="grow">
+        <view class="h3">智能助教</view>
+        <view class="muted">14 个主题 · 五种讲法</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 设置 -->
+  <view class="section-head">
+    <view class="section-title">设置</view>
+  </view>
+  <view class="card">
+    <view class="cell">
+      <view class="cell-icon ci-violet">◐</view>
+      <view class="grow">
+        <view class="h3">深色模式</view>
+        <view class="muted">夜里看不刺眼</view>
+      </view>
+      <switch checked="{{dark}}" color="#F2694B" bindchange="toggleDark" />
+    </view>
+    <view class="cell" bindtap="syncNow">
+      <view class="cell-icon ci-blue">☁</view>
+      <view class="grow">
+        <view class="h3">云同步</view>
+        <view class="muted">{{cloudOn ? syncText : '未开通 · 数据只在本机'}}</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="exportData">
+      <view class="cell-icon ci-mint">↑</view>
+      <view class="grow">
+        <view class="h3">导出学习数据</view>
+        <view class="muted">复制到剪贴板，换机可带回</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="importData">
+      <view class="cell-icon ci-blue">↓</view>
+      <view class="grow">
+        <view class="h3">导入备份</view>
+        <view class="muted">先复制备份内容，再点这里</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" wx:if="{{guestLeft > 0}}" bindtap="mergeGuest">
+      <view class="cell-icon ci-mint">⊕</view>
+      <view class="grow">
+        <view class="h3">并入游客记录</view>
+        <view class="muted">本机还有 {{guestLeft}} 项游客数据</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="clearData">
+      <view class="cell-icon ci-pink">⌫</view>
+      <view class="grow">
+        <view class="h3">清空学习数据</view>
+        <view class="muted">保留账号与主题设置</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="cell" wx:if="{{!isGuest}}" bindtap="logout">
+      <view class="cell-icon ci-butter">⏻</view>
+      <view class="grow">
+        <view class="h3">退出登录</view>
+        <view class="muted">回到游客模式</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view class="about">
+    <view class="h3">关于</view>
+    <view class="about-p mt8">
+      内容依据《信号与系统》（2017，上海交通大学出版社）整理，符号体系与教材一致：输入输出 f(t)/y(t)、傅里叶变换 F(jω)、Sa(t)=sin t/t、单边拉氏变换下限 0⁻。
+    </view>
+    <view class="about-p mt8">
+      默认全部数据保存在本机（wx 本地存储），不联网、不上传、不需要微信授权。开通云开发后可选择把已完成章节、笔记、收藏、错题与助教会话同步到云端，并在排行榜里和同学比一比；未开通时一切照旧，只是不上云。
+    </view>
+    <view class="muted mt12">版本 1.0.0 · 8 章 / 36 专题 / 28 公式 / {{qn}} 题 / 4 个实验</view>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 资料弹层：微信官方「头像昵称填写」，用户点按带入，不弹授权框 -->
+<view wx:if="{{nOpen}}">
+  <view class="mask" bindtap="closeNick"></view>
+  <view class="sheet">
+    <view class="sheet-bar"></view>
+    <view class="sheet-title">完善资料</view>
+    <view class="muted">都是一键带入：头像面板第一项是微信头像，点输入框键盘上方会出现微信昵称</view>
+    <view class="av-row">
+      <button class="av-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" hover-class="none">
+        <image class="av-img" src="{{nAvatar ? nAvatar : '/assets/theme/' + sticker + '.jpg'}}" mode="aspectFill" />
+      </button>
+      <view class="av-tips">
+        <text class="av-t1">点头像换图</text>
+        <text class="av-t2">可用微信头像，也可以现拍或从相册选（仅保存在本机）</text>
+      </view>
+    </view>
+    <input class="nick-input mt16" type="nickname" value="{{nVal}}" maxlength="16" placeholder="点这里，键盘上方一键填微信昵称" placeholder-class="ph" bindinput="onNick" />
+    <view class="row gap16 mt24">
+      <view class="btn btn-ghost grow" bindtap="closeNick">取消</view>
+      <view class="btn btn-primary grow" bindtap="saveNick">保存</view>
+    </view>
+  </view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

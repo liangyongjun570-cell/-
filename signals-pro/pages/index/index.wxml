@@ -1,0 +1,327 @@
+<view class="page {{theme}}">
+  <!-- 跨 tab 跳进来的来源提示：switchTab 没有返回栈，这里补一条可点的回路 -->
+  <view class="back-bar" wx:if="{{back}}" bindtap="goBackTab">
+    <text class="bb-arrow">‹</text>
+    <text class="bb-t">返回{{back.label}}</text>
+    <text class="bb-hint" wx:if="{{back.hint}}">{{back.hint}}</text>
+  </view>
+
+  <!-- 顶部问候 -->
+  <view class="head">
+    <view class="grow">
+      <view class="greet">{{greeting}}</view>
+      <view class="date">{{dateText}} · {{tip}}</view>
+    </view>
+    <view class="account" bindtap="gotoAccount">
+      <text class="acc-text">{{account}}</text>
+      <view class="acc-dot {{isGuest ? 'guest' : ''}}"></view>
+    </view>
+  </view>
+
+  <!-- 学习看板 -->
+  <view class="card progress-card">
+    <view class="row between">
+      <view>
+        <view class="muted">总学习进度</view>
+        <view class="big-num">{{overall.percent}}<text class="pct">%</text></view>
+      </view>
+      <view class="right-stats">
+        <view class="mini">
+          <text class="mini-n">{{overall.done}}/{{overall.total}}</text>
+          <text class="mini-l">完成单元</text>
+        </view>
+        <view class="mini">
+          <text class="mini-n">{{overall.chaptersDone}}/{{overall.chaptersTotal}}</text>
+          <text class="mini-l">完成章节</text>
+        </view>
+      </view>
+    </view>
+    <view class="progress mt16">
+      <view class="progress-fill" style="width: {{overall.percent}}%"></view>
+    </view>
+    <view class="stat-row mt16">
+      <view class="stat">
+        <text class="stat-n">{{stats.learnedTopics}}</text>
+        <text class="stat-l">已学专题</text>
+      </view>
+      <view class="stat">
+        <text class="stat-n">{{stats.learnedFormulas}}</text>
+        <text class="stat-l">已学公式</text>
+      </view>
+      <view class="stat">
+        <text class="stat-n">{{stats.fav}}</text>
+        <text class="stat-l">收藏</text>
+      </view>
+      <view class="stat">
+        <text class="stat-n">{{stats.wrong}}</text>
+        <text class="stat-l">错题</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索（原页展开） -->
+  <view class="search-wrap">
+    <view class="search-bar {{searchOpen ? 'open' : ''}}">
+      <text class="s-icon">⌕</text>
+      <input
+        wx:if="{{searchOpen}}"
+        class="s-input"
+        value="{{q}}"
+        focus="{{searchOpen}}"
+        maxlength="60"
+        confirm-type="search"
+        placeholder="搜章节 / 知识点 / 公式 / 例题"
+        placeholder-class="ph"
+        bindinput="onInput"
+      />
+      <text wx:else class="s-placeholder">搜章节 / 知识点 / 公式 / 例题</text>
+      <text wx:if="{{searchOpen && q}}" class="s-x" catchtap="clearQ">×</text>
+      <text wx:if="{{searchOpen}}" class="s-close" catchtap="closeSearch">收起</text>
+      <view wx:else class="s-open-mask" bindtap="openSearch"></view>
+    </view>
+
+    <view class="search-panel" wx:if="{{searchOpen}}">
+      <!-- 空查询：历史 + 推荐 -->
+      <block wx:if="{{!q}}">
+        <view wx:if="{{searches.length}}" class="sp-block">
+          <view class="row between">
+            <text class="sp-title">搜索记录</text>
+            <text class="sp-clear" bindtap="clearHistory">清空</text>
+          </view>
+          <view class="row wrap mt12">
+            <view class="chip" wx:for="{{searches}}" wx:key="*this" bindtap="pickTerm" data-t="{{item}}">{{item}}</view>
+          </view>
+        </view>
+
+        <view class="sp-block">
+          <text class="sp-title">推荐搜索</text>
+          <view class="row wrap mt12">
+            <view class="chip chip-soft" wx:for="{{recommend}}" wx:key="*this" bindtap="pickTerm" data-t="{{item}}">{{item}}</view>
+          </view>
+        </view>
+
+        <view class="sp-block">
+          <text class="sp-title">试试这样搜</text>
+          <view class="row wrap mt12">
+            <view class="chip chip-line" wx:for="{{sampleQueries}}" wx:key="*this" bindtap="pickTerm" data-t="{{item}}">{{item}}</view>
+          </view>
+          <view class="muted mt12">支持 ch3 / 第三章、FT / LT 缩写、以及「LTI 稳定」这类组合词。</view>
+        </view>
+      </block>
+
+      <!-- 有查询：类型筛选 + 结果 -->
+      <block wx:else>
+        <view class="row wrap type-row">
+          <view class="chip t-chip {{typeFilter === 'all' ? 'chip-on' : ''}}" bindtap="setType" data-type="all">全部 {{counts.all}}</view>
+          <view class="chip t-chip {{typeFilter === 'chapter' ? 'chip-on' : ''}}" bindtap="setType" data-type="chapter">章节 {{counts.chapter}}</view>
+          <view class="chip t-chip {{typeFilter === 'topic' ? 'chip-on' : ''}}" bindtap="setType" data-type="topic">知识点 {{counts.topic}}</view>
+          <view class="chip t-chip {{typeFilter === 'formula' ? 'chip-on' : ''}}" bindtap="setType" data-type="formula">公式 {{counts.formula}}</view>
+          <view class="chip t-chip {{typeFilter === 'example' ? 'chip-on' : ''}}" bindtap="setType" data-type="example">例题 {{counts.example}}</view>
+        </view>
+
+        <view class="results" wx:if="{{results.length}}">
+          <view
+            class="result"
+            wx:for="{{results}}"
+            wx:key="key"
+            bindtap="tapResult"
+            data-type="{{item.type}}"
+            data-id="{{item.id}}"
+          >
+            <view class="r-icon ri-{{item.type}}">{{item.icon}}</view>
+            <view class="grow">
+              <view class="row middle">
+                <text class="r-title ellipsis">{{item.title}}</text>
+                <text class="r-type">{{item.typeLabel}}</text>
+              </view>
+              <view class="muted ellipsis">ch{{item.ch}} · {{item.chName}}</view>
+              <view class="r-sum clamp2" wx:if="{{item.summary}}">{{item.summary}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="empty-s" wx:else>
+          <image class="empty-img" src="/assets/theme/s12.jpg" mode="aspectFit" />
+          <view class="sub">没有找到「{{q}}」相关内容</view>
+          <view class="muted mt8">换个关键词，或试试推荐词</view>
+          <view class="btn btn-soft btn-sm mt16" bindtap="clearQ">清空关键词</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 今日推荐 -->
+  <view class="section-head">
+    <view class="section-title">今日推荐</view>
+    <view class="section-more">{{slide + 1}} / {{slides.length}}</view>
+  </view>
+  <view class="swiper-wrap">
+    <swiper
+      class="swiper"
+      autoplay="{{!searchOpen}}"
+      interval="4500"
+      duration="420"
+      circular
+      current="{{slide}}"
+      bindchange="onSlide"
+    >
+      <swiper-item wx:for="{{slides}}" wx:key="id">
+        <view class="slide slide-{{item.accent}}" bindtap="tapSlide" data-i="{{index}}">
+          <view class="slide-text">
+            <view class="slide-tag">{{item.tag}}</view>
+            <view class="slide-title">{{item.title}}</view>
+            <view class="slide-desc">{{item.desc}}</view>
+            <view class="slide-go">立即学习 →</view>
+          </view>
+          <image class="slide-img" src="/assets/theme/{{item.sticker}}.jpg" mode="aspectFill" />
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="dots">
+      <view wx:for="{{slides}}" wx:key="id" class="dot {{slide === index ? 'on' : ''}}"></view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="grid3 quick-grid">
+    <view class="quick" wx:for="{{quick}}" wx:key="k" bindtap="quick" data-k="{{item.k}}">
+      <view class="q-icon qi-{{item.color}}">
+        <image class="q-img" src="/assets/theme/{{item.img}}.jpg" mode="aspectFill" />
+      </view>
+      <view class="q-t">{{item.t}}</view>
+      <view class="q-d" wx:if="{{item.d}}">{{item.d}}</view>
+    </view>
+  </view>
+
+  <!-- 继续学习 -->
+  <view class="section-head">
+    <view class="section-title">继续学习</view>
+    <view class="section-more" bindtap="quick" data-k="progress">章节目录</view>
+  </view>
+  <view class="card cont press" wx:if="{{next}}" bindtap="openTopic" data-id="{{next.id}}">
+    <view class="row between">
+      <view class="grow">
+        <view class="tag tag-coral">ch{{next.chNum}} · {{next.chapter}}</view>
+        <view class="h3 mt8">{{next.name}}</view>
+        <view class="muted mt8">预计 {{next.minutes}} 分钟 · 本章已完成 {{next.percent}}%</view>
+      </view>
+      <view class="go-pill">去学习</view>
+    </view>
+  </view>
+  <view class="card empty" wx:else>
+    <image class="empty-img" src="/assets/theme/s23.jpg" mode="aspectFit" />
+    <view class="sub">全部 36 个专题都已学完</view>
+    <view class="muted mt8">去题库检验一下，或看看错题本</view>
+    <view class="btn btn-soft btn-sm mt16" bindtap="quick" data-k="quiz">进入题库</view>
+  </view>
+
+  <!-- 变换演进图 -->
+  <view class="section-head">
+    <view class="section-title">信号分析演进图</view>
+    <view class="section-more">点节点进入</view>
+  </view>
+  <view class="card map-card">
+    <view class="map-row" wx:for="{{map}}" wx:key="k">
+      <view class="map-k mk-{{item.color}}">{{item.k}}</view>
+      <view class="grow">
+        <view class="muted">{{item.desc}}</view>
+        <view class="row wrap mt8">
+          <view
+            class="map-chip"
+            wx:for="{{item.items}}"
+            wx:for-item="n"
+            wx:key="id"
+            bindtap="openChapter"
+            data-id="{{n.id}}"
+          >{{n.t}}</view>
+        </view>
+      </view>
+    </view>
+    <view class="divider"></view>
+    <view class="muted mb8">三大变换（点开看公式）</view>
+    <view class="row wrap">
+      <view
+        class="map-chip chip-strong"
+        wx:for="{{transforms}}"
+        wx:key="id"
+        bindtap="tapFormula"
+        data-id="{{item.id}}"
+      >{{item.t}} · {{item.name}}</view>
+    </view>
+  </view>
+
+  <!-- 最近学习 -->
+  <view class="section-head">
+    <view class="section-title">最近学习</view>
+    <view class="section-more" bindtap="allRecords">查看全部</view>
+  </view>
+  <view class="card" wx:if="{{recent.length}}">
+    <view
+      class="cell"
+      wx:for="{{recent}}"
+      wx:key="key"
+      bindtap="openRecord"
+      data-type="{{item.type}}"
+      data-id="{{item.id}}"
+    >
+      <view class="cell-icon ci-{{item.type}}">{{item.icon}}</view>
+      <view class="grow">
+        <view class="h3 ellipsis">{{item.name}}</view>
+        <view class="muted">ch{{item.ch}} · {{item.dateText}} · {{item.learned ? '已完成' : '待巩固'}}</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+  <view class="card empty" wx:else>
+    <image class="empty-img" src="/assets/theme/s09.jpg" mode="aspectFit" />
+    <view class="sub">还没有学习记录</view>
+    <view class="muted mt8">打开任意知识点或公式，这里会自动留下足迹</view>
+    <view class="btn btn-soft btn-sm mt16" bindtap="quick" data-k="progress">去章节目录</view>
+  </view>
+
+  <view class="footer-tip">共 8 章 · 36 个知识专题 · 28 条公式 · {{qn}} 道题 · 4 个仿真实验</view>
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 公式详情弹层 -->
+<view wx:if="{{sheet}}">
+  <view class="mask" bindtap="closeSheet"></view>
+  <view class="sheet">
+    <view class="sheet-bar"></view>
+    <view class="row between">
+      <view class="grow">
+        <view class="sheet-title">{{sheet.name}}</view>
+        <view class="muted">ch{{sheet.ch}} · {{sheet.chName}} · {{sheet.cat}}</view>
+      </view>
+      <view class="star {{sheet.fav ? 'on' : ''}}" bindtap="toggleFav">{{sheet.fav ? '★' : '☆'}}</view>
+    </view>
+    <view class="formula-box mt20">
+      <math src="{{sheet.math}}" size="{{40}}" />
+    </view>
+    <scroll-view scroll-y class="sheet-scroll">
+      <view class="sub mt16">{{sheet.desc}}</view>
+      <view class="kv mt12">
+        <text class="k">适用条件</text>
+        <text class="v">{{sheet.cond}}</text>
+      </view>
+      <view class="kv mt8">
+        <text class="k">易错提示</text>
+        <text class="v">{{sheet.tip}}</text>
+      </view>
+      <view class="muted mt16">三合一复制</view>
+      <view class="row wrap mt8">
+        <view class="copy-btn" bindtap="copy" data-kind="text">纯文本</view>
+        <view class="copy-btn" bindtap="copy" data-kind="latex">LaTeX</view>
+        <view class="copy-btn" bindtap="copy" data-kind="matlab">MATLAB</view>
+        <view class="copy-btn" bindtap="copy" data-kind="python">Python</view>
+      </view>
+      <view class="btn btn-primary btn-block mt24" wx:if="{{!sheet.learned}}" bindtap="markLearned">
+        我已学会，记录进度
+      </view>
+      <view class="done-tip mt24" wx:else>✓ 已标记为已学</view>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

@@ -1,0 +1,316 @@
+<view class="page no-tab {{theme}}">
+  <!-- 头部 -->
+  <view class="th">
+    <view class="row between">
+      <view class="row middle" bindtap="goChapter">
+        <text class="th-ch thc-{{chInfo.color}}">ch{{chInfo.num}}</text>
+        <text class="th-cn ellipsis">{{chInfo.name}}</text>
+        <text class="th-arrow">›</text>
+      </view>
+      <view class="row gap12">
+        <text class="ico {{fav ? 'on' : ''}}" bindtap="toggleFav">{{fav ? '★' : '☆'}}</text>
+        <text class="ico" bindtap="openNote">{{note ? '✎' : '✐'}}</text>
+      </view>
+    </view>
+    <view class="th-name">{{t.name}}</view>
+    <view class="row middle mt12">
+      <text class="muted">{{t.short}} · 约 {{t.minutes}} 分钟</text>
+      <text wx:if="{{learned}}" class="th-done">已学</text>
+    </view>
+    <view class="th-intro mt16">{{t.intro}}</view>
+  </view>
+
+  <!-- 概述卡（ch0）：无四段式，改用要点卡片 -->
+  <block wx:if="{{overview}}">
+    <view class="card mt20">
+      <view class="ov-abbr">{{t.abbr}}</view>
+      <view class="ov-row mt16">
+        <text class="ov-k">适用对象</text>
+        <text class="ov-v">{{t.target}}</text>
+      </view>
+      <view class="ov-row mt12">
+        <text class="ov-k">所在域</text>
+        <text class="ov-v">{{t.domain}}</text>
+      </view>
+      <view class="mathbox mt16" wx:if="{{t.math}}">
+        <math src="{{t.math}}" size="{{32}}" />
+      </view>
+    </view>
+
+    <view class="card mt20">
+      <view class="h3">关键要点</view>
+      <view class="li" wx:for="{{t.points}}" wx:key="*this">
+        <text class="li-d"></text>
+        <text class="li-t">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="card mt20" wx:if="{{relFormulas.length}}">
+      <view class="h3">相关公式</view>
+      <view class="fm" wx:for="{{relFormulas}}" wx:key="id" bindtap="openFormula" data-id="{{item.id}}">
+        <view class="fm-name">{{item.name}}</view>
+        <view class="fm-math">
+          <math src="{{item.math}}" size="{{32}}" />
+        </view>
+      </view>
+    </view>
+
+    <view class="card mt20" wx:if="{{relChapters.length}}">
+      <view class="h3">继续深入</view>
+      <view class="rc" wx:for="{{relChapters}}" wx:key="id" bindtap="goCh" data-id="{{item.id}}">
+        <view class="grow">
+          <view class="rc-t">ch{{item.num}} {{item.name}}</view>
+          <view class="muted mt8 ellipsis">{{item.tagline}}</view>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- 四段式导航 -->
+  <scroll-view scroll-x class="tabs" enhanced show-scrollbar="{{false}}" wx:if="{{!overview}}">
+    <view
+      class="tab {{tab === item.k ? 'on' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="k"
+      bindtap="setTab"
+      data-k="{{item.k}}"
+    >{{item.t}}</view>
+  </scroll-view>
+
+  <!-- ① 概念 -->
+  <block wx:if="{{!overview && tab === 'concept'}}">
+    <view class="sec" wx:for="{{t.sections}}" wx:key="h">
+      <view class="sec-h">{{item.h}}</view>
+      <view class="p" wx:for="{{item.p}}" wx:for-item="p" wx:key="*this">{{p}}</view>
+      <view class="ul" wx:if="{{item.list}}">
+        <view class="li" wx:for="{{item.list}}" wx:for-item="l" wx:key="*this">
+          <text class="li-d"></text>
+          <text class="li-t">{{l}}</text>
+        </view>
+      </view>
+      <view class="mathbox" wx:if="{{item.math}}">
+        <math src="{{item.math}}" size="{{32}}" />
+      </view>
+      <view class="flow" wx:if="{{item.flow}}">
+        <block wx:for="{{item.flow}}" wx:for-item="f" wx:key="*this">
+          <view class="fl-node">{{f}}</view>
+          <view class="fl-arrow" wx:if="{{index < item.flow.length - 1}}">↓</view>
+        </block>
+      </view>
+    </view>
+
+    <view class="card-soft mt24">
+      <view class="row between">
+        <view class="h3">看完这一段了？</view>
+        <text class="muted">{{formulaList.length}} 条公式</text>
+      </view>
+      <view class="row gap16 mt16">
+        <view class="btn btn-ghost grow" bindtap="setTab" data-k="formula">看公式</view>
+        <view class="btn btn-primary grow" bindtap="setTab" data-k="example">看例题</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ② 公式 -->
+  <block wx:if="{{!overview && tab === 'formula'}}">
+    <view class="card mt20" wx:if="{{formulaList.length}}">
+      <view
+        class="fm"
+        wx:for="{{formulaList}}"
+        wx:key="id"
+        bindtap="openFormula"
+        data-id="{{item.id}}"
+      >
+        <view class="fm-name">{{item.name}}</view>
+        <view class="fm-math">
+          <math src="{{item.math}}" size="{{34}}" />
+        </view>
+        <view class="fm-go">点开看说明与复制 →</view>
+      </view>
+    </view>
+    <view class="card empty" wx:else>
+      <image class="empty-img" src="/assets/theme/s22.jpg" mode="aspectFit" />
+      <view class="sub">本专题没有独立公式</view>
+      <view class="muted mt8">公式集中在公式库，可按分类浏览</view>
+    </view>
+    <view class="muted mt16">
+      提示：专题里的公式 ID 与「公式库」一致，点开后可以三合一复制（纯文本 / LaTeX / MATLAB / Python）。
+    </view>
+    <view class="btn btn-primary btn-block mt24" bindtap="setTab" data-k="example">下一段：例题</view>
+  </block>
+
+  <!-- ③ 例题 -->
+  <block wx:if="{{!overview && tab === 'example'}}">
+    <view class="card mt20">
+      <view class="row middle">
+        <text class="ex-tag">精讲例题</text>
+        <text class="ex-title ellipsis">{{t.example.title}}</text>
+      </view>
+      <view class="ex-stem mt16">{{t.example.stem}}</view>
+
+      <view class="hint-box mt16" wx:if="{{hintOpen}}">
+        <text class="hint-k">思路</text>
+        <text class="hint-v">{{t.example.hint}}</text>
+      </view>
+
+      <view class="step" wx:for="{{t.example.steps}}" wx:key="h" wx:if="{{index < stepShown}}">
+        <view class="step-no">{{index + 1}}</view>
+        <view class="grow">
+          <view class="step-h">{{item.h}}</view>
+          <view class="step-t">{{item.t}}</view>
+        </view>
+      </view>
+
+      <block wx:if="{{stepShown > t.example.steps.length}}">
+        <view class="ans mt20">
+          <text class="ans-k">答</text>
+          <text class="ans-v">{{t.example.answer}}</text>
+        </view>
+        <view class="pit mt16">
+          <text class="pit-k">易错</text>
+          <text class="pit-v">{{t.example.pitfall}}</text>
+        </view>
+      </block>
+
+      <view class="row gap16 mt24" wx:if="{{stepShown <= t.example.steps.length}}">
+        <view class="btn btn-ghost grow" wx:if="{{!hintOpen}}" bindtap="toggleHint">看提示</view>
+        <view class="btn btn-ghost grow" wx:else bindtap="allSteps">全部展开</view>
+        <view class="btn btn-primary grow" bindtap="nextStep">
+          下一步 {{stepShown}}/{{t.example.steps.length}}
+        </view>
+      </view>
+    </view>
+
+    <!-- 随堂测 -->
+    <view class="section-head">
+      <view class="section-title">随堂自测</view>
+      <view class="section-more" wx:if="{{quizTotal}}">{{quizScore}} / {{quizTotal}} 对</view>
+    </view>
+    <view class="card" wx:for="{{t.quiz}}" wx:key="q">
+      <view class="qz-q">{{index + 1}}. {{item.q}}</view>
+      <view class="qz-opt-wrap">
+        <view
+          class="qz-opt {{quizPick[index] === oi ? (oi === item.answer ? 'right' : 'wrong') : ''}} {{quizDone[index] && oi === item.answer ? 'right' : ''}}"
+          wx:for="{{item.options}}"
+          wx:for-item="o"
+          wx:for-index="oi"
+          wx:key="*this"
+          bindtap="pickQuiz"
+          data-i="{{index}}"
+          data-o="{{oi}}"
+        >
+          <text class="qz-k">{{letters[oi]}}</text>
+          <text class="qz-v">{{o}}</text>
+        </view>
+      </view>
+      <view class="qz-exp" wx:if="{{quizDone[index]}}">
+        <text class="qz-exp-k">{{quizPick[index] === item.answer ? '✓ 正确' : '✗ 正确答案 ' + letters[item.answer]}}</text>
+        <text class="qz-exp-v">{{item.explain}}</text>
+      </view>
+    </view>
+    <view class="btn btn-ghost btn-block mt16" bindtap="goQuiz">去题库做更多题</view>
+  </block>
+
+  <!-- ④ 应用 -->
+  <block wx:if="{{!overview && tab === 'case'}}">
+    <view class="card mt20">
+      <view class="case-tag">工程案例</view>
+      <view class="case-title mt12">{{t.case.title}}</view>
+      <view class="case-desc mt12">{{t.case.desc}}</view>
+    </view>
+
+    <view class="card mt20">
+      <view class="h3">动手看现象</view>
+      <view class="muted mt8">把这一节的概念放进仿真里，参数一改结论就变。</view>
+      <view class="row gap16 mt16">
+        <view class="btn btn-soft grow" bindtap="goLab">打开实验室</view>
+        <view class="btn btn-ghost grow" bindtap="goTutor">问助教</view>
+      </view>
+    </view>
+
+    <view class="card mt20" wx:if="{{note}}">
+      <view class="row between">
+        <view class="h3">我的笔记</view>
+        <text class="muted" bindtap="openNote">编辑</text>
+      </view>
+      <view class="note-view mt12">{{note}}</view>
+    </view>
+  </block>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar">
+    <view class="bb-star {{fav ? 'on' : ''}}" bindtap="toggleFav">{{fav ? '★' : '☆'}}</view>
+    <view class="bb-btn {{learned ? 'done' : ''}}" bindtap="toggleLearn">
+      {{learned ? '✓ 已学会' : '标记为已学'}}
+    </view>
+    <view class="bb-next" wx:if="{{nextTopic}}" bindtap="goTopic" data-id="{{nextTopic.id}}">下一节 →</view>
+    <view class="bb-next" wx:else bindtap="goChapter">回章节 →</view>
+  </view>
+  <view class="safe-bottom"></view>
+  <view class="bottom-holder"></view>
+</view>
+
+<!-- 笔记编辑 -->
+<view wx:if="{{noteOpen}}">
+  <view class="mask" bindtap="closeNote"></view>
+  <view class="sheet">
+    <view class="sheet-bar"></view>
+    <view class="sheet-title">随堂笔记</view>
+    <view class="muted">{{t.name}}</view>
+    <textarea
+      class="note-input mt16"
+      value="{{note}}"
+      placeholder="写下你的理解、易错点或口诀，最多 500 字"
+      placeholder-class="ph"
+      maxlength="500"
+      bindinput="onNote"
+      auto-height
+    />
+    <view class="row gap16 mt24">
+      <view class="btn btn-ghost grow" bindtap="closeNote">取消</view>
+      <view class="btn btn-primary grow" bindtap="saveNote">保存笔记</view>
+    </view>
+  </view>
+</view>
+
+<!-- 公式弹层 -->
+<view wx:if="{{sheet}}">
+  <view class="mask" bindtap="closeSheet"></view>
+  <view class="sheet">
+    <view class="sheet-bar"></view>
+    <view class="row between">
+      <view class="grow">
+        <view class="sheet-title">{{sheet.name}}</view>
+        <view class="muted">ch{{sheet.ch}} · {{sheet.cat}}</view>
+      </view>
+      <view class="star {{sheet.fav ? 'on' : ''}}" bindtap="toggleFavFormula">{{sheet.fav ? '★' : '☆'}}</view>
+    </view>
+    <view class="formula-box mt20">
+      <math src="{{sheet.math}}" size="{{40}}" />
+    </view>
+    <scroll-view scroll-y class="sheet-scroll">
+      <view class="sub mt16">{{sheet.desc}}</view>
+      <view class="kv mt12">
+        <text class="k">适用条件</text>
+        <text class="v">{{sheet.cond}}</text>
+      </view>
+      <view class="kv mt8">
+        <text class="k">易错提示</text>
+        <text class="v">{{sheet.tip}}</text>
+      </view>
+      <view class="muted mt16">三合一复制</view>
+      <view class="row wrap mt8">
+        <view class="copy-btn" bindtap="copy" data-kind="text">纯文本</view>
+        <view class="copy-btn" bindtap="copy" data-kind="latex">LaTeX</view>
+        <view class="copy-btn" bindtap="copy" data-kind="matlab">MATLAB</view>
+        <view class="copy-btn" bindtap="copy" data-kind="python">Python</view>
+      </view>
+      <view class="btn btn-primary btn-block mt24" wx:if="{{!sheet.learned}}" bindtap="markFormula">我已学会，记录进度</view>
+      <view class="done-tip mt24" wx:else>✓ 已标记为已学</view>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

@@ -1,0 +1,250 @@
+<view class="page no-tab {{theme}}">
+  <!-- ========== 首页 ========== -->
+  <block wx:if="{{mode === 'home'}}">
+    <view class="head">
+      <view class="grow">
+        <view class="h1">智能题库</view>
+        <view class="sub mt8">{{total}} 道题 · 8 章全覆盖 · 3 个难度层</view>
+      </view>
+      <image class="head-img" src="/assets/theme/s20.jpg" mode="aspectFill" />
+    </view>
+
+    <view class="card stat-card">
+      <view class="st">
+        <text class="st-n">{{stats.answered}}</text>
+        <text class="st-l">累计答题</text>
+      </view>
+      <view class="st-line"></view>
+      <view class="st">
+        <text class="st-n">{{stats.rate}}%</text>
+        <text class="st-l">正确率</text>
+      </view>
+      <view class="st-line"></view>
+      <view class="st">
+        <text class="st-n">{{stats.wrong}}</text>
+        <text class="st-l">错题</text>
+      </view>
+    </view>
+
+    <!-- 1v1 擂台入口（增量，不影响下面的刷题模式） -->
+    <view class="pk-entry" bindtap="goPk">
+      <view class="pke-l">
+        <view class="pke-t">⚔️ 信号擂台 · 1v1 抢答</view>
+        <view class="pke-s">{{pkTier}} · {{pkRp}} 分 · 5 题定胜负</view>
+      </view>
+      <view class="pke-go">开打</view>
+    </view>
+
+    <view class="mode" bindtap="startRandom">
+      <view class="row between">
+        <view class="grow">
+          <view class="md-t">随机模考</view>
+          <view class="md-s">随机抽 10 / 20 / 30 道，做完出成绩</view>
+        </view>
+        <view class="md-go md-coral">开始</view>
+      </view>
+    </view>
+
+    <view class="mode" bindtap="startWrong">
+      <view class="row between">
+        <view class="grow">
+          <view class="md-t">错题攻坚</view>
+          <view class="md-s">把做错的题再过一遍，答对后可移出错题本</view>
+        </view>
+        <view class="md-go md-pink">{{stats.wrong}} 题</view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <view class="section-title">按章专项</view>
+      <view class="section-more">共 {{total}} 题</view>
+    </view>
+    <view class="ch-grid">
+      <view class="ch-cell" wx:for="{{chList}}" wx:key="num" bindtap="tapCh" data-num="{{item.num}}">
+        <view class="cc-num cn-{{item.color}}">ch{{item.num}}</view>
+        <view class="cc-name clamp2">{{item.name}}</view>
+        <view class="cc-count">{{item.count}} 题</view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <view class="section-title">难度专项</view>
+      <view class="section-more">点一行即可开练</view>
+    </view>
+    <view class="card">
+      <view class="dif" wx:for="{{difList}}" wx:key="name" bindtap="startByDiff" data-d="{{item.name}}">
+        <view class="row between">
+          <text class="dif-n">{{item.name}}</text>
+          <view class="row middle">
+            <text class="muted">{{item.count}} 题</text>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view class="progress mt8">
+          <view class="progress-fill" style="width: {{item.count / total * 100}}%"></view>
+        </view>
+      </view>
+      <view class="divider"></view>
+      <view class="row between" bindtap="goMistakes">
+        <text class="sub">查看错题本</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+    <view class="safe-bottom"></view>
+  </block>
+
+  <!-- ========== 答题 ========== -->
+  <block wx:if="{{mode === 'run' && cur}}">
+    <view class="run-head">
+      <view class="row between">
+        <view class="grow">
+          <view class="h3">{{exam.title}}</view>
+          <view class="muted mt8">第 {{idx}} / {{totalN}} 题</view>
+        </view>
+        <view class="quit" bindtap="setIdle">退出</view>
+      </view>
+      <view class="progress mt16">
+        <view class="progress-fill" style="width: {{idx / totalN * 100}}%"></view>
+      </view>
+    </view>
+
+    <view class="card mt20">
+      <view class="row gap8">
+        <text class="tag tag-blue">ch{{cur.ch}}</text>
+        <text class="tag tag-violet">{{cur.difficulty}}</text>
+      </view>
+      <view class="q-stem mt16">{{cur.stem}}</view>
+
+      <view class="opts">
+        <view
+          class="opt {{submitted && index === cur.answer ? 'right' : ''}} {{submitted && index === picked && index !== cur.answer ? 'wrong' : ''}} {{!submitted && index === picked ? 'sel' : ''}}"
+          wx:for="{{cur.options}}"
+          wx:key="*this"
+          bindtap="pick"
+          data-i="{{index}}"
+        >
+          <text class="opt-k">{{letters[index]}}</text>
+          <text class="opt-v">{{item}}</text>
+          <text class="opt-mark" wx:if="{{submitted && index === cur.answer}}">✓</text>
+          <text class="opt-mark x" wx:if="{{submitted && index === picked && index !== cur.answer}}">✗</text>
+        </view>
+      </view>
+
+      <view class="hint-box mt16" wx:if="{{showHint}}">
+        <text class="hint-k">提示</text>
+        <text class="hint-v">{{cur.hint}}</text>
+      </view>
+
+      <view class="exp-box mt16" wx:if="{{submitted}}">
+        <view class="row between">
+          <text class="exp-k {{picked === cur.answer ? 'ok' : 'bad'}}">{{picked === cur.answer ? '✓ 回答正确' : '✗ 正确答案 ' + letters[cur.answer]}}</text>
+          <text class="exp-f" wx:if="{{cur.formulaRef}}" bindtap="openFormula" data-id="{{cur.formulaRef}}">相关公式 ›</text>
+        </view>
+        <view class="exp-v mt8">{{cur.explanation}}</view>
+      </view>
+    </view>
+
+    <button class="share-mini" open-type="share">📤 把这题分享给同学</button>
+
+    <view class="run-bar">
+      <view class="rb-ghost" wx:if="{{idx > 1}}" bindtap="prevQuestion">上一题</view>
+      <view class="rb-ghost" wx:else bindtap="toggleHint">{{showHint ? '收起提示' : '看提示'}}</view>
+      <view class="rb-main" wx:if="{{!submitted}}" bindtap="submit">提交作答</view>
+      <view class="rb-main" wx:else bindtap="nextQuestion">{{idx === totalN ? '交卷看结果' : '下一题'}}</view>
+    </view>
+    <view class="bar-holder"></view>
+    <view class="safe-bottom"></view>
+  </block>
+
+  <!-- ========== 结果 ========== -->
+  <block wx:if="{{mode === 'result' && result}}">
+    <view class="card res-card mt20">
+      <view class="row between">
+        <view class="grow">
+          <view class="muted">{{result.title}} · 用时 {{result.secs}} 秒</view>
+          <view class="row middle mt12">
+            <text class="res-num">{{result.right}}</text>
+            <text class="res-total">/ {{result.total}} 题</text>
+          </view>
+          <view class="res-word mt8">{{result.word}}</view>
+        </view>
+        <image class="res-img" src="/assets/theme/{{result.sticker}}.jpg" mode="aspectFill" />
+      </view>
+      <view class="res-bar mt20">
+        <view class="res-fill" style="width: {{result.rate}}%"></view>
+      </view>
+      <view class="row between mt12">
+        <text class="muted">正确率</text>
+        <text class="res-rate">{{result.rate}}%</text>
+      </view>
+    </view>
+
+    <view class="row gap16 mt24">
+      <view class="btn btn-ghost grow" bindtap="setIdle">回题库</view>
+      <view class="btn btn-primary grow" bindtap="restart">再来一轮</view>
+    </view>
+
+    <block wx:if="{{result.wrongList.length}}">
+      <view class="section-head">
+        <view class="section-title">本次错题</view>
+        <view class="section-more" bindtap="redoWrong">重做这些</view>
+      </view>
+      <view class="card">
+        <view class="wr" wx:for="{{result.wrongList}}" wx:key="id" bindtap="openReview" data-id="{{item.id}}">
+          <view class="row between">
+            <text class="wr-stem clamp2">{{item.stem}}</text>
+            <text class="arrow">›</text>
+          </view>
+          <view class="row mt8 gap12">
+            <text class="tag tag-pink">你选 {{item.pick >= 0 ? letters[item.pick] : '未答'}}</text>
+            <text class="tag tag-mint">正确 {{item.letter}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="card empty" wx:else>
+      <image class="empty-img" src="/assets/theme/s23.jpg" mode="aspectFit" />
+      <view class="sub">全对！这次没有错题</view>
+      <view class="muted mt8">换个章节再来一组，或挑战随机模考</view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </block>
+  <view class="safe-bottom" wx:if="{{mode === 'home'}}"></view>
+</view>
+
+<!-- 错题回顾弹层 -->
+<view wx:if="{{review}}">
+  <view class="mask" bindtap="closeReview"></view>
+  <view class="sheet">
+    <view class="sheet-bar"></view>
+    <view class="row between">
+      <view class="grow">
+        <view class="sheet-title">题目回顾</view>
+        <view class="muted">ch{{review.ch}} · {{review.chName}} · {{review.difficulty}}</view>
+      </view>
+    </view>
+    <scroll-view scroll-y class="sheet-scroll">
+      <view class="q-stem mt16">{{review.stem}}</view>
+      <view class="opt static {{review.answer === index ? 'right' : ''}}" wx:for="{{review.options}}" wx:key="*this">
+        <text class="opt-k">{{letters[index]}}</text>
+        <text class="opt-v">{{item}}</text>
+        <text class="opt-mark" wx:if="{{review.answer === index}}">✓</text>
+      </view>
+      <view class="exp-box mt16">
+        <text class="exp-k ok">正确答案 {{review.letter}}</text>
+        <view class="exp-v mt8">{{review.explanation}}</view>
+      </view>
+      <view class="hint-box mt16">
+        <text class="hint-k">提示</text>
+        <text class="hint-v">{{review.hint}}</text>
+      </view>
+      <view class="btn btn-soft btn-block mt24" bindtap="closeReview">知道了</view>
+      <view class="safe-bottom"></view>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

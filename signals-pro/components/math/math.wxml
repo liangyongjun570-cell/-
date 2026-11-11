@@ -1,0 +1,29 @@
+<scroll-view class="mw" scroll-x="{{true}}" enhanced show-scrollbar="{{false}}">
+  <view class="m-line" style="font-size: {{size}}rpx;">
+    <block wx:for="{{tokens}}" wx:key="k">
+      <text wx:if="{{item.t === 't'}}" class="m-t">{{item.v}}</text>
+      <text wx:elif="{{item.t === 'sup'}}" class="m-sup">{{item.v}}</text>
+      <text wx:elif="{{item.t === 'sub'}}" class="m-sub">{{item.v}}</text>
+      <view wx:elif="{{item.t === 'frac'}}" class="m-frac">
+        <text class="m-part">{{item.num}}</text>
+        <view class="m-bar"></view>
+        <text class="m-part">{{item.den}}</text>
+      </view>
+      <view wx:elif="{{item.t === 'big'}}" class="m-big">
+        <text class="m-glyph">{{item.v}}</text>
+        <view class="m-limits" wx:if="{{item.sup || item.sub}}">
+          <text class="m-lim-sup" wx:if="{{item.sup}}">{{item.sup}}</text>
+          <text class="m-lim-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+        </view>
+      </view>
+      <view wx:elif="{{item.t === 'lim'}}" class="m-big">
+        <text class="m-lim-word">lim</text>
+        <text class="m-lim-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+      </view>
+      <view wx:elif="{{item.t === 'sqrt'}}" class="m-sqrt">
+        <text class="m-rad">√</text>
+        <text class="m-rad-body">{{item.v}}</text>
+      </view>
+    </block>
+  </view>
+</scroll-view>

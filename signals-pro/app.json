@@ -1,0 +1,63 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/chapters/chapters",
+    "pages/lab/lab",
+    "pages/formulas/formulas",
+    "pages/me/me",
+    "pages/chapter/chapter",
+    "pages/topic/topic",
+    "pages/quiz/quiz",
+    "pages/pk/pk",
+    "pages/mistakes/mistakes",
+    "pages/tutor/tutor",
+    "pages/records/records",
+    "pages/assistant/assistant",
+    "pages/login/login",
+    "pages/match/match"
+  ],
+  "window": {
+    "navigationBarTitleText": "信号与系统 Pro",
+    "navigationBarBackgroundColor": "#FFF8F2",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF8F2",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9C8878",
+    "selectedColor": "#F2694B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/chapters/chapters",
+        "text": "章节"
+      },
+      {
+        "pagePath": "pages/lab/lab",
+        "text": "实验室"
+      },
+      {
+        "pagePath": "pages/formulas/formulas",
+        "text": "公式"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的"
+      }
+    ]
+  },
+  "usingComponents": {
+    "math": "/components/math/math",
+    "sticker": "/components/sticker/sticker",
+    "assistant": "/components/assistant/assistant"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

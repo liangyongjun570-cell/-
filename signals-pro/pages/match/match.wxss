@@ -1,0 +1,484 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx 28rpx 60rpx;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+
+/* 顶部状态 */
+.game-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10rpx 0 16rpx;
+}
+
+.gh-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.gh-item.right {
+  align-items: flex-end;
+}
+
+.gh-k {
+  font-size: 22rpx;
+  color: var(--ink-3);
+}
+
+.gh-v {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-num {
+  color: var(--primary);
+}
+
+.wave-tag {
+  margin-top: 6rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line);
+}
+
+/* 倒计时圈 */
+.timer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.tb-circle {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4rpx solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 20rpx rgba(242, 105, 75, 0.18);
+  transition: all 0.25s ease;
+}
+
+.timer-box.urgent .tb-circle {
+  border-color: #E8453C;
+  background: #FFF1F0;
+  animation: pulse 0.7s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+.tb-num {
+  font-size: 42rpx;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-box.urgent .tb-num {
+  color: #E8453C;
+}
+
+.tb-s {
+  font-size: 20rpx;
+  color: var(--ink-3);
+  margin-left: 2rpx;
+  margin-top: 10rpx;
+}
+
+.tb-combo {
+  position: absolute;
+  top: 112rpx;
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #F2694B;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4rpx);
+  transition: all 0.2s ease;
+}
+
+.tb-combo.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 进度条 */
+.time-track {
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin: 14rpx 0 16rpx;
+}
+
+.time-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #1FA97C, #F2694B);
+  transition: width 0.2s linear;
+}
+
+.time-fill.urgent {
+  background: #E8453C;
+}
+
+/* 提示条 */
+.tip-bar {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 16rpx;
+  background: var(--surface-2);
+  border-radius: 14rpx;
+  margin-bottom: 20rpx;
+}
+
+.tip-dot {
+  color: var(--primary);
+  font-size: 16rpx;
+  margin-right: 12rpx;
+}
+
+.tip-t {
+  font-size: 22rpx;
+  color: var(--ink-2);
+}
+
+/* 卡牌网格：3 列 x 4 行 */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-top: 10rpx;
+}
+
+.match-card {
+  position: relative;
+  height: 200rpx;
+  border-radius: 20rpx;
+  background: var(--surface);
+  border: 3rpx solid var(--line);
+  box-shadow: 0 4rpx 16rpx rgba(125, 88, 62, 0.05);
+  box-sizing: border-box;
+  padding: 12rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.match-card:active {
+  transform: scale(0.96);
+}
+
+/* 选中态 */
+.match-card.selected {
+  border-color: var(--primary);
+  background: #FFF7F4;
+  box-shadow: 0 0 0 4rpx rgba(242, 105, 75, 0.24), 0 8rpx 24rpx rgba(242, 105, 75, 0.18);
+  transform: translateY(-4rpx);
+}
+
+/* 匹配消除态 */
+.match-card.matched {
+  border-color: #A3E0C8;
+  background: #F2FAF6;
+  opacity: 0.38;
+  transform: scale(0.93);
+  pointer-events: none;
+}
+
+.matched-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-icon {
+  font-size: 48rpx;
+  font-weight: 900;
+  color: #1FA97C;
+}
+
+/* 错误晃动态 */
+.match-card.wrong {
+  border-color: #E8453C;
+  background: #FFF2F0;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8rpx); }
+  75% { transform: translateX(8rpx); }
+}
+
+.card-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 领域标签 */
+.domain-badge {
+  align-self: flex-start;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  font-size: 18rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+}
+
+.domain-badge.time {
+  background: #FFE8E1;
+  color: #D34C2D;
+}
+
+.domain-badge.freq {
+  background: #E5F0FC;
+  color: #2669B0;
+}
+
+/* 数学公式容器 */
+.card-math {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4rpx 0;
+}
+
+/* 卡牌名称 */
+.card-title {
+  font-size: 20rpx;
+  color: var(--ink-3);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 连击浮动提示 */
+.float-notice {
+  position: fixed;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: rgba(30, 22, 18, 0.88);
+  color: #fff;
+  padding: 16rpx 36rpx;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 100;
+}
+
+.float-notice.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* 底部操作 */
+.game-footer {
+  margin-top: 28rpx;
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+}
+
+.btn-ghost {
+  height: 68rpx;
+  padding: 0 28rpx;
+  border-radius: 999rpx;
+  background: var(--surface);
+  border: 2rpx solid var(--line);
+  color: var(--ink-2);
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+}
+
+.btn-ghost:active {
+  background: var(--surface-2);
+}
+
+/* 结算弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 18, 15, 0.68);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  box-sizing: border-box;
+  z-index: 999;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 640rpx;
+  background: var(--surface);
+  border-radius: 36rpx;
+  padding: 36rpx 32rpx 28rpx;
+  box-sizing: border-box;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.28);
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.res-head {
+  text-align: center;
+}
+
+.res-trophy {
+  font-size: 68rpx;
+  line-height: 1;
+}
+
+.res-title {
+  margin-top: 12rpx;
+  font-size: 38rpx;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.res-sub {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--ink-3);
+}
+
+.res-stats {
+  margin-top: 28rpx;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12rpx;
+  padding: 20rpx 12rpx;
+  background: var(--surface-2);
+  border-radius: 20rpx;
+  text-align: center;
+}
+
+.rs-v {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.rs-k {
+  display: block;
+  font-size: 20rpx;
+  color: var(--ink-3);
+  margin-top: 4rpx;
+}
+
+.new-best {
+  margin-top: 14rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #1FA97C;
+}
+
+/* 知识点复盘 */
+.review-box {
+  margin-top: 24rpx;
+  border-top: 2rpx dashed var(--line);
+  padding-top: 18rpx;
+}
+
+.rb-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin-bottom: 12rpx;
+}
+
+.rb-list {
+  max-height: 220rpx;
+}
+
+.rb-item {
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.rb-item:last-child {
+  border-bottom: none;
+}
+
+.rb-name {
+  font-size: 23rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rb-desc {
+  font-size: 20rpx;
+  color: var(--ink-3);
+  margin-top: 2rpx;
+}
+
+/* 模态框按钮 */
+.modal-actions {
+  margin-top: 28rpx;
+  display: flex;
+  gap: 18rpx;
+}
+
+.btn-primary {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: linear-gradient(135deg, #f2694b, #ff8d6e);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+  border: none;
+  box-shadow: 0 8rpx 20rpx rgba(242, 105, 75, 0.28);
+}
+
+.btn-primary::after,
+.btn-share::after {
+  border: none;
+}
+
+.btn-share {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: var(--surface-2);
+  border: 2rpx solid var(--line);
+  color: var(--ink-2);
+  font-size: 28rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+}

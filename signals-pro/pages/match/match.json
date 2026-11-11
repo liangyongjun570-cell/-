@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "变换对对碰",
+  "navigationBarBackgroundColor": "#FFF8F2",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "math": "/components/math/math",
+    "sticker": "/components/sticker/sticker"
+  }
+}

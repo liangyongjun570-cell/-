@@ -1,0 +1,286 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  padding: 28rpx 0 8rpx;
+}
+.reset {
+  height: 60rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: var(--surface);
+  border: 2rpx solid var(--line);
+  color: var(--ink-2);
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 实验选择 */
+.picks {
+  white-space: nowrap;
+  margin-top: 20rpx;
+}
+.pick {
+  display: inline-block;
+  width: 300rpx;
+  padding: 20rpx 22rpx;
+  border-radius: 22rpx;
+  background: var(--surface);
+  border: 2rpx solid var(--line);
+  margin-right: 16rpx;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+.pick.on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.pk-t {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pick.on .pk-t { color: #fff; }
+.pk-s {
+  font-size: 19rpx;
+  color: var(--ink-3);
+  margin-top: 6rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pick.on .pk-s { color: rgba(255, 255, 255, 0.82); }
+
+/* 画布 */
+.cv-card {
+  margin-top: 20rpx;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 12rpx;
+  box-shadow: var(--shadow);
+}
+.cv {
+  width: 100%;
+  height: 620rpx;
+  display: block;
+}
+/* 手绘模式要吃掉手指的滑动，否则页面会跟着滚 */
+.cv-draw {
+  touch-action: none;
+}
+
+/* ---------- 卷积台模式切换 ---------- */
+.seg-bar {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 20rpx;
+  padding: 6rpx;
+  background: var(--surface-2);
+  border-radius: 18rpx;
+}
+.seg-i {
+  flex: 1;
+  text-align: center;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding: 14rpx 0;
+  border-radius: 14rpx;
+}
+.seg-i.on {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 2rpx 8rpx rgba(120, 80, 60, 0.12);
+}
+
+/* 手绘操作区 */
+.draw-act {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+.dbtn {
+  flex-shrink: 0;
+  height: 62rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: var(--surface-2);
+  border: 2rpx solid var(--line);
+  color: var(--ink-2);
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+}
+.dbtn:active {
+  background: var(--primary-soft);
+}
+.dtip {
+  flex: 1;
+  font-size: 21rpx;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* 控制 */
+.ctl {
+  padding: 8rpx 0 4rpx;
+}
+.ctl-k {
+  font-size: 25rpx;
+  color: var(--ink-2);
+}
+.ctl-v {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.pole-kv {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+.pkv {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: 16rpx;
+  padding: 14rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pkv-k {
+  font-size: 19rpx;
+  color: var(--ink-3);
+}
+.pkv-v {
+  font-size: 24rpx;
+  font-weight: 700;
+  margin-top: 4rpx;
+  font-variant-numeric: tabular-nums;
+}
+.pkv-v.ok { color: #3F8F6B; }
+.pkv-v.bad { color: #C26666; }
+
+/* 结论 */
+.concl .cv-y {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.arrow {
+  font-size: 34rpx;
+  color: var(--ink-3);
+  margin-left: 12rpx;
+}
+.footer-tip {
+  margin-top: 28rpx;
+  font-size: 21rpx;
+  color: var(--ink-3);
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* ---------- 分享复原提示 ---------- */
+.shared-tip {
+  margin-top: 12px;
+  background: rgba(61, 134, 212, 0.1);
+  border: 1px solid rgba(61, 134, 212, 0.24);
+  color: #2f6fb0;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 12px;
+  padding: 9px 12px;
+}
+
+/* ---------- ⑤ 声波频谱控制 ---------- */
+.mic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mic-btn {
+  flex-shrink: 0;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #f2694b, #ff8d6e);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 6px 16px rgba(242, 105, 75, 0.28);
+}
+
+.mic-btn.on {
+  background: linear-gradient(135deg, #4a3a30, #6b5546);
+  box-shadow: 0 6px 16px rgba(60, 40, 28, 0.24);
+}
+
+.mic-btn:active {
+  transform: scale(0.97);
+}
+
+.mic-peak {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.mp-k {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.mp-v {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.2;
+}
+
+.mic-hint {
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+/* ---------- 分享按钮 ---------- */
+.share-btn {
+  margin: 18px 0 0;
+  padding: 0;
+  height: 46px;
+  line-height: 46px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.share-btn::after {
+  border: none;
+}
+
+.share-btn:active {
+  background: var(--primary-soft);
+  color: #e05536;
+}
+
+/* 深色模式：浅蓝提示条需要提亮，否则在深色底上读不清 */
+.page.dark .shared-tip {
+  background: rgba(61, 134, 212, 0.18);
+  border-color: rgba(120, 170, 230, 0.34);
+  color: #9cc0e8;
+}

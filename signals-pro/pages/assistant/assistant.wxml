@@ -1,0 +1,225 @@
+<view class="page {{theme === 'dark' ? 'dark' : ''}} full">
+
+  <!-- ============ 左侧边栏 ============ -->
+  <view class="side-mask" wx:if="{{drawer}}" bindtap="closeDrawer"></view>
+
+  <view class="side {{drawer ? 'on' : ''}}" style="padding-top:{{statusBar}}px">
+    <view class="side-top">
+      <view class="brand">
+        <image class="brand-av" src="/assets/pet/wave.png" mode="aspectFit" />
+        <view class="brand-meta">
+          <view class="brand-n">Ω-Bot 问答台</view>
+          <view class="brand-s">{{apiCfg.enabled ? '自定义模型 · ' + apiCfg.model : '离线信号教授引擎'}}</view>
+        </view>
+      </view>
+      <view class="new-btn" bindtap="newChat">＋ 新建对话</view>
+    </view>
+
+    <scroll-view scroll-y class="side-scroll">
+      <view class="side-h">会话历史</view>
+      <view wx:if="{{!sessions.length}}" class="side-empty">还没有对话，点上面新建一条</view>
+      <view
+        class="sess {{item.current ? 'on' : ''}}"
+        wx:for="{{sessions}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="switchSession"
+      >
+        <view class="sess-main">
+          <text class="sess-t">{{item.title}}</text>
+          <text class="sess-m">{{item.time}} · {{item.count}} 条</text>
+        </view>
+        <text class="sess-del" data-id="{{item.id}}" catchtap="delSession">✕</text>
+      </view>
+
+      <view class="side-h mt24">章节高频难题</view>
+      <view class="hard" wx:for="{{hard}}" wx:key="id" data-id="{{item.id}}" bindtap="tapHard">
+        <text class="hard-ch">第{{item.num}}章</text>
+        <text class="hard-t">{{item.title}}</text>
+      </view>
+    </scroll-view>
+
+    <view class="side-foot" bindtap="openApi">
+      <view class="sf-l">
+        <text class="sf-k">⚙️ 自定义大模型</text>
+        <text class="sf-v">{{apiCfg.enabled ? apiCfg.model : '未启用 · 用离线引擎'}}</text>
+      </view>
+      <text class="sf-go">›</text>
+    </view>
+  </view>
+
+  <!-- ============ 中央主对话区 ============ -->
+  <view class="main">
+    <view class="topbar" style="padding-top:{{statusBar}}px">
+      <view class="tb-left">
+        <view class="tb-back" bindtap="backHalf" hover-class="tb-back-hv" aria-role="button" aria-label="返回">
+          <text class="tb-back-ico">‹</text>
+        </view>
+        <view class="tb-icon" bindtap="toggleDrawer">☰</view>
+        <view class="tb-title">
+          <text class="tbt">智能助教</text>
+          <text class="tbs">📍 {{ctx.label}}</text>
+        </view>
+      </view>
+      <view class="tb-right">
+        <view class="tb-styles">
+          <view
+            class="ts {{style === item.id ? 'on' : ''}}"
+            wx:for="{{styles}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="setStyle"
+          >{{item.icon}}</view>
+        </view>
+        <view class="tb-btn" bindtap="backHalf">🗗</view>
+        <view class="tb-btn" bindtap="backHome">✕</view>
+      </view>
+    </view>
+
+    <scroll-view scroll-y class="chat" scroll-into-view="{{scrollTo}}" scroll-with-animation>
+      <view class="hero" wx:if="{{!msgs.length}}">
+        <image class="hero-av" src="/assets/pet/love.png" mode="aspectFit" />
+        <view class="hero-t">我是信号小精灵 Ω-Bot</view>
+        <view class="hero-s">离线信号教授引擎已就绪，不联网也能答。公式深推、四大变换、考研大题、仿真代码，直接问就行。</view>
+        <view class="guides">
+          <view class="guide" wx:for="{{guides}}" wx:key="id" data-ask="{{item.ask}}" bindtap="tapGuide">
+            <text class="g-i">{{item.icon}}</text>
+            <text class="g-t">{{item.title}}</text>
+            <text class="g-d">{{item.desc}}</text>
+          </view>
+        </view>
+        <view class="hero-chips">
+          <view class="chip" wx:for="{{ctx.asks}}" wx:key="*this" data-q="{{item}}" bindtap="tapAsk">{{item}}</view>
+        </view>
+        <view class="hero-papers">
+          <view class="hp-h">📷 没带题？点一张典型考题看批改效果</view>
+          <view class="hp-row">
+            <view class="hp" data-id="p1" bindtap="pickPaper">
+              <image class="hp-img" src="/assets/paper/p1.jpg" mode="aspectFill" />
+              <text class="hp-t">卷积积分</text>
+            </view>
+            <view class="hp" data-id="p2" bindtap="pickPaper">
+              <image class="hp-img" src="/assets/paper/p2.jpg" mode="aspectFill" />
+              <text class="hp-t">拉氏变换</text>
+            </view>
+            <view class="hp" data-id="p3" bindtap="pickPaper">
+              <image class="hp-img" src="/assets/paper/p3.jpg" mode="aspectFill" />
+              <text class="hp-t">矩形脉冲频谱</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="msg {{item.role}}" wx:for="{{msgs}}" wx:key="id" id="mb{{index}}">
+        <image class="msg-av" wx:if="{{item.role === 'assistant'}}" src="/assets/pet/wave.png" mode="aspectFit" />
+        <view class="msg-body">
+          <image class="msg-img" wx:if="{{item.img}}" src="{{item.img}}" mode="aspectFill" data-src="{{item.img}}" bindtap="previewImg" />
+          <text class="msg-text" wx:if="{{item.role === 'user'}}">{{item.text}}</text>
+
+          <block wx:if="{{item.blocks}}">
+            <block wx:for="{{item.blocks}}" wx:for-item="b" wx:key="k">
+              <text class="blk-p" wx:if="{{b.type === 'p'}}">{{b.text}}</text>
+              <view class="blk-step" wx:elif="{{b.type === 'step'}}">
+                <text class="st-i">{{b.index}}</text>
+                <text class="st-t">{{b.text}}</text>
+              </view>
+              <view class="blk-quote" wx:elif="{{b.type === 'quote'}}">{{b.text}}</view>
+              <view class="blk-ans" wx:elif="{{b.type === 'answer'}}">{{b.text}}</view>
+              <view class="blk-tip" wx:elif="{{b.type === 'tip'}}">{{b.text}}</view>
+              <view class="blk-code" wx:elif="{{b.type === 'code'}}">
+                <view class="code-bar">
+                  <text class="code-lang">{{b.lang}}</text>
+                  <text class="code-copy" data-text="{{b.text}}" catchtap="copyCode">复制</text>
+                </view>
+                <text class="code-txt">{{b.text}}</text>
+              </view>
+              <view class="blk-fm" wx:elif="{{b.type === 'formula'}}">
+                <view class="fm-row" wx:for="{{b.list}}" wx:for-item="f" wx:key="id">
+                  <math src="{{f.math}}" size="32" />
+                </view>
+              </view>
+            </block>
+
+            <view class="refs" wx:if="{{item.refs}}">
+              <view class="ref" wx:if="{{item.refs.lab >= 0}}" data-lab="{{item.refs.lab}}" catchtap="goLab">🎛️ 打开仿真实验</view>
+              <view class="ref" wx:if="{{item.refs.ch}}" data-ch="{{item.refs.ch}}" catchtap="goChapter">📖 跳转 {{item.refs.chName}}</view>
+            </view>
+          </block>
+          <view class="msg-via" wx:if="{{item.via}}">{{item.via === 'cloud' ? '自定义模型 · 云函数中转' : '自定义模型 · 直连'}}</view>
+        </view>
+      </view>
+
+      <!-- 云端流式打字机 -->
+      <view class="msg assistant" wx:if="{{streamText}}" id="mb-stream">
+        <image class="msg-av" src="/assets/pet/wave.png" mode="aspectFit" />
+        <view class="msg-body">
+          <text class="blk-p">{{streamText}}<text class="caret">▍</text></text>
+        </view>
+      </view>
+
+      <view class="typing" wx:if="{{busy && !streamText}}">Ω-Bot 正在翻书…</view>
+      <view class="chat-pad"></view>
+    </scroll-view>
+
+    <!-- ============ 底部公式输入台 ============ -->
+    <view class="composer" wx:if="{{!apiSheet}}">
+      <scroll-view scroll-x class="symbar" show-scrollbar="{{false}}">
+        <view class="sym" wx:for="{{symbols}}" wx:key="k" data-v="{{item.v}}" bindtap="insSym">{{item.k}}</view>
+      </scroll-view>
+      <view class="composer-row">
+        <view class="cam" catchtap="camera">📷</view>
+        <textarea
+          class="ta"
+          value="{{input}}"
+          bindinput="onInput"
+          auto-height
+          maxlength="1000"
+          show-confirm-bar="{{false}}"
+          cursor-spacing="24"
+          placeholder="问点什么…比如「卷积为什么要翻转」"
+          placeholder-class="ta-ph"
+        />
+        <view class="send {{input ? 'on' : ''}}" bindtap="onSend">发送</view>
+      </view>
+      <view class="composer-tip">当前引擎：{{engineLabel}} · 仅供学习参考</view>
+    </view>
+  </view>
+
+  <!-- ============ 自定义模型设置 ============ -->
+  <view class="mask" wx:if="{{apiSheet}}" bindtap="closeApi"></view>
+  <view class="api-sheet" wx:if="{{apiSheet}}">
+    <view class="as-head">
+      <text class="as-t">自定义大模型</text>
+      <text class="as-x" bindtap="closeApi">✕</text>
+    </view>
+    <view class="as-body">
+      <view class="as-row">
+        <text class="as-k">启用</text>
+        <switch checked="{{apiDraft.enabled}}" color="#F2694B" bindchange="apiToggle" />
+      </view>
+      <view class="as-row col">
+        <text class="as-k">接口地址</text>
+        <input class="as-in" value="{{apiDraft.baseUrl}}" data-k="baseUrl" bindinput="apiInput" placeholder="https://api.xiaomimimo.com/v1" placeholder-class="as-ph" />
+      </view>
+      <view class="as-row col">
+        <text class="as-k">API Key</text>
+        <input class="as-in" value="{{apiDraft.key}}" data-k="key" bindinput="apiInput" password placeholder="sk-..." placeholder-class="as-ph" />
+      </view>
+      <view class="as-row col">
+        <text class="as-k">模型名</text>
+        <input class="as-in" value="{{apiDraft.model}}" data-k="model" bindinput="apiInput" placeholder="mimo-v2.6-flash" placeholder-class="as-ph" />
+      </view>
+      <view class="as-note">
+        小米 MiMo（mimo-v2.6-flash）开箱即用，可自行更换接口/模型/Key。不填 Key 时走云函数中转（Key 由服务端保管，不怕扒包）。不可用时自动回退：云开发 AI → 离线引擎，不会卡住对话。自填的 Key 只保存在本机。
+      </view>
+      <view class="as-note warn">真机直连接口域名（如 https://api.xiaomimimo.com）需加进微信后台「开发设置 → request 合法域名」，否则直连会被拦截；被拦时会自动改走云函数中转（需已部署 mycloud 云函数）。开发工具勾选「不校验合法域名」可先跑通。</view>
+      <view class="as-test" wx:if="{{apiTestMsg}}">
+        <text class="as-test-t {{apiTestOk ? 'ok' : 'bad'}}">{{apiTestMsg}}</text>
+      </view>
+      <view class="as-btns">
+        <view class="btn btn-ghost btn-block" bindtap="testApi">{{apiTesting ? '连接中…' : '测试连接'}}</view>
+        <view class="btn btn-primary btn-block" bindtap="saveApi">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

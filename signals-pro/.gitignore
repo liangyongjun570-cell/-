@@ -1,0 +1,21 @@
+# Windows
+[Dd]esktop.ini
+Thumbs.db
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+
+# Node.js
+node_modules/
+
+# 密钥（真实 Key 只存本机，仓库里只有 *.example.js 模板）
+ai.key.local.js
+mimo.key.js
+
+# 微信开发者个人配置
+project.private.config.json

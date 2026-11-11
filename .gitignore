@@ -1,0 +1,18 @@
+# ===== 入库白名单：只提交小程序工程与烟测，其余一律不进 =====
+/*
+!/.gitignore
+!/_smoke*.js
+!/signals-pro/
+
+# ===== 双保险：以下内容任何层级都不入库 =====
+# 密钥（真实 Key 只存本机，仓库里只有 *.example.js 模板）
+ai.key.local.js
+mimo.key.js
+# 微信开发者个人配置
+project.private.config.json
+# 内部工作记录（含记忆/日志）
+.workbuddy/
+# 依赖与产物
+node_modules/
+miniprogram_npm/
+*.log

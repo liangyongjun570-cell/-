@@ -1,0 +1,6 @@
+<image
+  class="sticker"
+  src="{{src}}"
+  mode="{{fit}}"
+  style="width: {{size}}rpx; height: {{size}}rpx; border-radius: {{radius}}rpx;"
+/>

@@ -1,0 +1,74 @@
+<view class="page no-tab {{theme}}">
+  <view class="head">
+    <view class="grow">
+      <view class="h1">错题本</view>
+      <view class="sub mt8">{{all.length}} 道待攻克 · 答对后记得移出</view>
+    </view>
+    <view class="clr" wx:if="{{all.length}}" bindtap="clearAll">清空</view>
+  </view>
+
+  <block wx:if="{{all.length}}">
+    <view class="row wrap filters">
+      <view class="chip f-chip {{filter === -1 ? 'chip-on' : ''}}" bindtap="setFilter" data-k="-1">全部 {{all.length}}</view>
+      <view
+        class="chip f-chip {{filter === item.k ? 'chip-on' : ''}}"
+        wx:for="{{chs}}"
+        wx:key="k"
+        bindtap="setFilter"
+        data-k="{{item.k}}"
+      >{{item.t}}</view>
+    </view>
+
+    <view class="card wr-card" wx:for="{{list}}" wx:key="key">
+      <view class="row between" bindtap="toggle" data-i="{{index}}">
+        <view class="row gap8">
+          <text class="tag tag-blue">ch{{item.ch}}</text>
+          <text class="tag tag-pink">{{item.difficulty}}</text>
+        </view>
+        <text class="wr-more">{{item.open ? '收起' : '展开解析'}}</text>
+      </view>
+
+      <view class="wr-stem mt12">{{item.stem}}</view>
+
+      <view class="opts" wx:if="{{item.open}}">
+        <view class="opt {{index === item.answer ? 'right' : ''}}" wx:for="{{item.options}}" wx:key="*this">
+          <text class="opt-k">{{letters[index]}}</text>
+          <text class="opt-v">{{item}}</text>
+          <text class="opt-mark" wx:if="{{index === item.answer}}">✓</text>
+        </view>
+      </view>
+
+      <view class="exp-box mt12" wx:if="{{item.open}}">
+        <view class="row between">
+          <text class="exp-k ok">正确答案 {{letters[item.answer]}}</text>
+          <text class="exp-f" wx:if="{{item.formulaRef}}" bindtap="openFormula" data-id="{{item.formulaRef}}">相关公式 ›</text>
+        </view>
+        <view class="exp-v mt8">{{item.explain}}</view>
+        <view class="hint-box mt12" wx:if="{{item.hint}}">
+          <text class="hint-k">提示</text>
+          <text class="hint-v">{{item.hint}}</text>
+        </view>
+      </view>
+
+      <view class="row gap16 mt16">
+        <view class="btn btn-ghost btn-sm grow" bindtap="mastered" data-id="{{item.id}}">已掌握，移出</view>
+        <view class="btn btn-soft btn-sm grow" bindtap="goQuiz">去练同类题</view>
+      </view>
+    </view>
+
+    <view class="btn btn-primary btn-block mt24" bindtap="redo">重做全部错题</view>
+  </block>
+
+  <view class="card empty mt24" wx:else>
+    <image class="empty-img" src="/assets/theme/s17.jpg" mode="aspectFit" />
+    <view class="sub">错题本是空的</view>
+    <view class="muted mt8">做题时答错的题会自动进到这里，方便集中攻克</view>
+    <view class="btn btn-primary btn-sm mt16" bindtap="goQuiz">去题库练几道</view>
+  </view>
+
+  <view class="footer-tip">错题会按章节分组，同一考点集中复习效率最高</view>
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

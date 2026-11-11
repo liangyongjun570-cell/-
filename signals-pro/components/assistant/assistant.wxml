@@ -1,0 +1,163 @@
+<view class="asst-root" wx:if="{{ready}}">
+
+  <!-- ================= 第一级：桌宠悬挂 ================= -->
+  <view class="pet-wrap {{state === 'pet' ? '' : 'offscreen'}}" style="transform: translate3d({{x}}px, {{y}}px, 0);">
+
+    <view
+      class="pet {{mood}} {{dragging ? 'drag' : ''}} {{swap ? 'swap' : ''}}"
+      catchtouchstart="onTouchStart"
+      catchtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+      bindtouchcancel="onTouchCancel"
+    >
+      <view class="pet-shadow"></view>
+      <!-- 6 个静态路径：动态拼 src 会让工具静态分析不到、可能整张图打不进包 -->
+      <image class="pet-img" wx:if="{{petImg === 'wave'}}" src="/assets/pet/wave.png" mode="aspectFit" binderror="onImgError" />
+      <image class="pet-img" wx:elif="{{petImg === 'confused'}}" src="/assets/pet/confused.png" mode="aspectFit" binderror="onImgError" />
+      <image class="pet-img" wx:elif="{{petImg === 'love'}}" src="/assets/pet/love.png" mode="aspectFit" binderror="onImgError" />
+      <image class="pet-img" wx:elif="{{petImg === 'surprise'}}" src="/assets/pet/surprise.png" mode="aspectFit" binderror="onImgError" />
+      <image class="pet-img" wx:elif="{{petImg === 'sleepy'}}" src="/assets/pet/sleepy.png" mode="aspectFit" binderror="onImgError" />
+      <image class="pet-img" wx:else src="/assets/pet/wave.png" mode="aspectFit" binderror="onImgError" />
+      <view class="pet-err" wx:if="{{imgErr}}">图挂了<br />{{imgErr}}</view>
+      <view class="pet-dot"></view>
+    </view>
+  </view>
+
+  <!-- ================= 第二级：半屏伴读 ================= -->
+  <view class="half-mask" wx:if="{{state === 'half'}}" bindtap="collapse"></view>
+
+  <view class="half {{hasTab ? 'above-tab' : ''}}" wx:if="{{state === 'half'}}">
+    <view class="half-head">
+      <view class="hd-left">
+        <image class="hd-avatar" src="/assets/pet/cheer.png" mode="aspectFit" />
+        <view class="hd-meta">
+          <view class="hd-name">信号小精灵 Ω-Bot</view>
+          <view class="hd-ctx">📍 当前关联：{{ctx.label}}</view>
+        </view>
+      </view>
+      <view class="hd-acts">
+        <view class="hd-btn" catchtap="toFull">⛶</view>
+        <view class="hd-btn" catchtap="collapse">━</view>
+      </view>
+    </view>
+
+    <view class="half-styles">
+      <view
+        class="st {{style === item.id ? 'on' : ''}}"
+        wx:for="{{styles}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="setStyle"
+      >{{item.icon}} {{item.short}}</view>
+    </view>
+
+    <view class="half-quick">
+      <scroll-view scroll-x class="hq-scroll" show-scrollbar="{{false}}">
+        <view class="hq" wx:for="{{quick}}" wx:key="*this" data-q="{{item}}" bindtap="tapAsk">{{item}}</view>
+      </scroll-view>
+    </view>
+
+    <scroll-view scroll-y class="half-body" scroll-into-view="{{scrollTo}}" scroll-with-animation>
+      <view wx:if="{{!msgs.length}}" class="half-empty">
+        <view class="he-t">{{ctx.hint}}</view>
+        <view class="he-sub">没带题？点下面这张典型考题，直接看批改效果：</view>
+        <view class="he-papers">
+          <view class="he-paper" data-id="p1" bindtap="pickPaper">
+            <image class="he-paper-img" src="/assets/paper/p1.jpg" mode="aspectFill" />
+            <text class="he-paper-t">卷积积分</text>
+          </view>
+          <view class="he-paper" data-id="p2" bindtap="pickPaper">
+            <image class="he-paper-img" src="/assets/paper/p2.jpg" mode="aspectFill" />
+            <text class="he-paper-t">拉氏变换</text>
+          </view>
+          <view class="he-paper" data-id="p3" bindtap="pickPaper">
+            <image class="he-paper-img" src="/assets/paper/p3.jpg" mode="aspectFill" />
+            <text class="he-paper-t">矩形脉冲频谱</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="msg {{item.role}}" wx:for="{{msgs}}" wx:key="id" id="mb{{index}}">
+        <view class="msg-av" wx:if="{{item.role === 'assistant'}}">Ω</view>
+        <view class="msg-body">
+          <image class="msg-img" wx:if="{{item.img}}" src="{{item.img}}" mode="aspectFill" data-src="{{item.img}}" bindtap="previewImg" />
+          <text class="msg-text" wx:if="{{item.role === 'user'}}">{{item.text}}</text>
+
+          <block wx:if="{{item.blocks}}">
+            <block wx:for="{{item.blocks}}" wx:for-item="b" wx:key="k">
+              <text class="blk-p" wx:if="{{b.type === 'p'}}">{{b.text}}</text>
+              <view class="blk-step" wx:elif="{{b.type === 'step'}}">
+                <text class="st-i">{{b.index}}</text>
+                <text class="st-t">{{b.text}}</text>
+              </view>
+              <view class="blk-quote" wx:elif="{{b.type === 'quote'}}">{{b.text}}</view>
+              <view class="blk-ans" wx:elif="{{b.type === 'answer'}}">{{b.text}}</view>
+              <view class="blk-tip" wx:elif="{{b.type === 'tip'}}">{{b.text}}</view>
+              <view class="blk-code" wx:elif="{{b.type === 'code'}}">
+                <view class="code-bar">
+                  <text class="code-lang">{{b.lang}}</text>
+                  <text class="code-copy" data-text="{{b.text}}" catchtap="copyCode">复制</text>
+                </view>
+                <text class="code-txt">{{b.text}}</text>
+              </view>
+              <view class="blk-fm" wx:elif="{{b.type === 'formula'}}">
+                <view class="fm-row" wx:for="{{b.list}}" wx:for-item="f" wx:key="id">
+                  <math src="{{f.math}}" size="30" />
+                </view>
+              </view>
+            </block>
+
+            <view class="refs" wx:if="{{item.refs}}">
+              <view
+                class="ref"
+                wx:if="{{item.refs.lab >= 0}}"
+                data-lab="{{item.refs.lab}}"
+                catchtap="goLab"
+              >🎛️ 打开仿真实验</view>
+              <view
+                class="ref"
+                wx:if="{{item.refs.ch}}"
+                data-ch="{{item.refs.ch}}"
+                catchtap="goChapter"
+              >📖 跳转 {{item.refs.chName}}</view>
+            </view>
+          </block>
+          <view class="msg-via" wx:if="{{item.via}}">{{item.via === 'cloud' ? '自定义模型 · 云函数中转' : '自定义模型 · 直连'}}</view>
+        </view>
+      </view>
+
+      <!-- 云端流式打字机：只在有内容时出现，落库后自动消失 -->
+      <view class="msg assistant" wx:if="{{streamText}}" id="mb-stream">
+        <view class="msg-av">Ω</view>
+        <view class="msg-body">
+          <text class="blk-p">{{streamText}}<text class="caret">▍</text></text>
+        </view>
+      </view>
+
+      <view class="typing" wx:if="{{busy && !streamText}}">Ω-Bot 正在翻书…</view>
+      <view class="half-pad"></view>
+    </scroll-view>
+
+    <view class="half-foot">
+      <scroll-view scroll-x class="symbar" show-scrollbar="{{false}}">
+        <view class="sym" wx:for="{{symbols}}" wx:key="k" data-v="{{item.v}}" bindtap="insSym">{{item.k}}</view>
+      </scroll-view>
+      <view class="inbar">
+        <view class="cam-btn" catchtap="camera">📷</view>
+        <input
+          class="in"
+          value="{{input}}"
+          bindinput="onInput"
+          bindconfirm="onConfirm"
+          placeholder="问点什么…（支持公式名、章节名）"
+          placeholder-class="in-ph"
+          confirm-type="send"
+          cursor-spacing="24"
+          adjust-position="{{true}}"
+          hold-keyboard="{{true}}"
+        />
+        <view class="send {{input ? 'on' : ''}}" bindtap="onSend">发送</view>
+      </view>
+    </view>
+  </view>
+</view>

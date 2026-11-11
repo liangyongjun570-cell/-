@@ -1,0 +1,389 @@
+<view class="page {{theme}}">
+  <!-- 跨 tab 跳进来的来源提示：switchTab 没有返回栈，这里补一条可点的回路 -->
+  <view class="back-bar" wx:if="{{back}}" bindtap="goBackTab">
+    <text class="bb-arrow">‹</text>
+    <text class="bb-t">返回{{back.label}}</text>
+    <text class="bb-hint" wx:if="{{back.hint}}">{{back.hint}}</text>
+  </view>
+
+  <view class="head">
+    <view class="grow">
+      <view class="h1">仿真实验室</view>
+      <view class="sub mt8">六个 Canvas 实验，参数一拖，结论跟着变</view>
+    </view>
+    <view class="reset" bindtap="reset">复位</view>
+  </view>
+
+  <view class="shared-tip" wx:if="{{shared}}">📤 已按同学分享的参数复原，可以直接拖动对比</view>
+
+  <!-- 实验选择 -->
+  <scroll-view scroll-x class="picks" enhanced show-scrollbar="{{false}}">
+    <view
+      class="pick {{tab === item.k ? 'on' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="k"
+      bindtap="setTab"
+      data-k="{{item.k}}"
+    >
+      <view class="pk-t">{{item.t}}</view>
+      <view class="pk-s">{{item.s}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 卷积台两种玩法：拖矩形看重叠面积 / 手绘任意 x(t) -->
+  <view class="seg-bar" wx:if="{{tab === 0}}">
+    <view class="seg-i {{!drawMode ? 'on' : ''}}" data-v="0" bindtap="setDrawMode">▭ 矩形拖动</view>
+    <view class="seg-i {{drawMode ? 'on' : ''}}" data-v="1" bindtap="setDrawMode">✍️ 手绘 x(t)</view>
+  </view>
+
+  <!-- 画布 -->
+  <view class="cv-card">
+    <canvas wx:if="{{tab === 0 && !drawMode}}" type="2d" id="cvConv" class="cv"></canvas>
+    <canvas
+      wx:if="{{tab === 0 && drawMode}}"
+      type="2d"
+      id="cvDraw"
+      class="cv cv-draw"
+      catchtouchstart="onDrawStart"
+      catchtouchmove="onDrawMove"
+      catchtouchend="onDrawEnd"
+      catchtouchcancel="onDrawEnd"
+    ></canvas>
+    <canvas wx:if="{{tab === 1}}" type="2d" id="cvHarm" class="cv"></canvas>
+    <canvas wx:if="{{tab === 2}}" type="2d" id="cvPole" class="cv"></canvas>
+    <canvas wx:if="{{tab === 3}}" type="2d" id="cvSamp" class="cv"></canvas>
+    <canvas wx:if="{{tab === 4}}" type="2d" id="cvSpec" class="cv"></canvas>
+    <canvas wx:if="{{tab === 5}}" type="2d" id="cvAccel" class="cv"></canvas>
+  </view>
+
+  <!-- ① 卷积控制 -->
+  <block wx:if="{{tab === 0}}">
+    <view class="card mt20" wx:if="{{!drawMode}}">
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">x(t) 宽度 a</text>
+          <text class="ctl-v">{{a}}</text>
+        </view>
+        <slider min="0.5" max="4" step="0.1" value="{{a}}" activeColor="#F2694B" backgroundColor="#F1E2D6" block-size="20" data-k="a" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">h(t) 宽度 b</text>
+          <text class="ctl-v">{{b}}</text>
+        </view>
+        <slider min="0.5" max="4" step="0.1" value="{{b}}" activeColor="#1FA97C" backgroundColor="#F1E2D6" block-size="20" data-k="b" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">滑动位置 t</text>
+          <text class="ctl-v">{{tau}}</text>
+        </view>
+        <slider min="0" max="8" step="0.1" value="{{tau}}" activeColor="#D98E2B" backgroundColor="#F1E2D6" block-size="20" data-k="tau" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+    </view>
+
+    <view class="card mt20" wx:else>
+      <view class="row wrap mb16">
+        <view
+          class="chip {{hk === item.k ? 'chip-on' : ''}}"
+          wx:for="{{hks}}"
+          wx:key="k"
+          data-k="{{item.k}}"
+          bindtap="setHk"
+        >{{item.t}}</view>
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">{{hk === 'exp' ? 'h(t) 时间常数 τ' : 'h(t) 宽度 b'}}</text>
+          <text class="ctl-v">{{b}}</text>
+        </view>
+        <slider min="0.2" max="3" step="0.1" value="{{b}}" activeColor="#1FA97C" backgroundColor="#F1E2D6" block-size="20" data-k="b" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="draw-act">
+        <view class="dbtn" bindtap="clearDraw">🧽 清空重画</view>
+        <text class="dtip">{{drawn ? '换一种 h(t)，看输出怎么变' : '按住画布上半部分滑动'}}</text>
+      </view>
+    </view>
+
+    <view class="card concl mt20" wx:if="{{!drawMode}}">
+      <view class="row between">
+        <view class="h3">此刻读数</view>
+        <text class="tag tag-butter">{{convPhase}}</text>
+      </view>
+      <view class="row middle mt12">
+        <text class="cv-y">y(t) = {{convY}}</text>
+      </view>
+      <view class="sub mt12">
+        卷积值就是两块波形的重叠面积。t 从 0 增大时先"进入"（上升段）、再完全重合（平台段）、最后"离开"（下降段）——这就是两个矩形卷出梯形的全过程。
+      </view>
+    </view>
+
+    <view class="card concl mt20" wx:else>
+      <view class="row between">
+        <view class="h3">边画边算</view>
+        <text class="tag {{drawn ? 'tag-mint' : 'tag-butter'}}">{{drawn ? '已手绘' : '等待落笔'}}</text>
+      </view>
+      <view class="pole-kv mt12">
+        <view class="pkv">
+          <text class="pkv-k">∫x dt 面积</text>
+          <text class="pkv-v">{{dArea}}</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">y 峰值</text>
+          <text class="pkv-v">{{dPeak}}</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">谱主瓣宽</text>
+          <text class="pkv-v">{{dBw}}</text>
+        </view>
+      </view>
+      <view class="sub mt12">
+        上半块用手指画 x(t)：左右是时间（整块 1 个 T），上下是幅度。松手后立即做 256 点离散卷积，橙线是 y(t)=x(t)*h(t)，紫线是 x(t) 的幅度谱。把脉冲画窄一点→主瓣变宽；把 h(t) 换成指数衰减→输出拖出长尾巴。
+      </view>
+    </view>
+  </block>
+
+  <!-- ② 谐波控制 -->
+  <block wx:if="{{tab === 1}}">
+    <view class="card mt20">
+      <view class="row wrap mb16">
+        <view
+          class="chip {{wave === index ? 'chip-on' : ''}}"
+          wx:for="{{waves}}"
+          wx:key="*this"
+          bindtap="setWave"
+          data-v="{{index}}"
+        >{{item}}</view>
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">谐波项数 N</text>
+          <text class="ctl-v">{{N}}</text>
+        </view>
+        <slider min="1" max="15" step="1" value="{{N}}" activeColor="#9B86CE" backgroundColor="#F1E2D6" block-size="20" data-k="N" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+    </view>
+
+    <view class="card concl mt20">
+      <view class="row between">
+        <view class="h3">看到了什么</view>
+        <text class="tag tag-violet">峰值 {{harmPeak}}</text>
+      </view>
+      <view class="sub mt12">
+        N 越大越接近理想波形，但跳变处总留下一段振铃——这就是吉布斯现象（超调约 9%，不随 N 消失）。奇数项贡献基波与奇次谐波，偶次谐波为零。
+      </view>
+    </view>
+  </block>
+
+  <!-- ③ 零极点控制 -->
+  <block wx:if="{{tab === 2}}">
+    <view class="card mt20">
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">极点模值 |s|</text>
+          <text class="ctl-v">{{r}}</text>
+        </view>
+        <slider min="0.1" max="2" step="0.05" value="{{r}}" activeColor="#9CC0E8" backgroundColor="#F1E2D6" block-size="20" data-k="r" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">极点角度（°）</text>
+          <text class="ctl-v">{{ang}}</text>
+        </view>
+        <slider min="0" max="180" step="5" value="{{ang}}" activeColor="#9B86CE" backgroundColor="#F1E2D6" block-size="20" data-k="ang" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="pole-kv">
+        <view class="pkv">
+          <text class="pkv-k">实部 σ</text>
+          <text class="pkv-v">{{poleSigma}}</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">虚部 ω</text>
+          <text class="pkv-v">{{poleOmega}}</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">稳定性</text>
+          <text class="pkv-v {{poleStable ? 'ok' : 'bad'}}">{{poleStable ? '稳定' : '不稳定'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card concl mt20">
+      <view class="sub">
+        左图是 s 平面：极点越靠左（σ 越负）衰减越快；角度越接近 90° 振荡越强；一旦越过虚轴（σ>0），h(t) 发散，系统不稳定。右上是 h(t)，右下是 |H(jω)|——极点靠近虚轴时会出现尖锐谐振峰。
+      </view>
+    </view>
+  </block>
+
+  <!-- ④ 采样控制 -->
+  <block wx:if="{{tab === 3}}">
+    <view class="card mt20">
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">信号频率 f₀</text>
+          <text class="ctl-v">{{f0}} Hz</text>
+        </view>
+        <slider min="0.5" max="10" step="0.5" value="{{f0}}" activeColor="#3D86D4" backgroundColor="#F1E2D6" block-size="20" data-k="f0" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="ctl">
+        <view class="row between">
+          <text class="ctl-k">采样率 fs</text>
+          <text class="ctl-v">{{fs}} Hz</text>
+        </view>
+        <slider min="1" max="40" step="1" value="{{fs}}" activeColor="#F2694B" backgroundColor="#F1E2D6" block-size="20" data-k="fs" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+      <view class="pole-kv">
+        <view class="pkv">
+          <text class="pkv-k">2f₀</text>
+          <text class="pkv-v">{{f0 * 2}} Hz</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">重建频率</text>
+          <text class="pkv-v">{{aliasF}} Hz</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">是否混叠</text>
+          <text class="pkv-v {{aliased ? 'bad' : 'ok'}}">{{aliased ? '混叠' : '正常'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card concl mt20">
+      <view class="sub">
+        fs ≥ 2f₀ 时采样点能唯一还原原信号；一旦 fs 掉到 2f₀ 以下，重建出的就是"折叠"后的低频假象——这就是混叠。所以工程上采样前必须先抗混叠低通，把高于 fs/2 的成分先滤掉。
+      </view>
+    </view>
+  </block>
+
+  <!-- ⑤ 声波频谱 -->
+  <block wx:if="{{tab === 4}}">
+    <view class="card mt20">
+      <view class="mic-row">
+        <view class="mic-btn" wx:if="{{!micOn}}" bindtap="startMic">🎙️ 开麦克风</view>
+        <view class="mic-btn on" wx:else bindtap="stopMic">⏹ 停止采集</view>
+        <view class="mic-peak">
+          <text class="mp-k">主频</text>
+          <text class="mp-v">{{peakHz}}</text>
+        </view>
+      </view>
+      <view class="mic-hint">{{specHint}}</view>
+      <view class="row wrap mt16">
+        <view
+          class="chip {{simKind === item.k && !micOn ? 'chip-on' : ''}}"
+          wx:for="{{sims}}"
+          wx:key="k"
+          data-k="{{item.k}}"
+          bindtap="tapSim"
+        >{{item.t}}</view>
+      </view>
+    </view>
+
+    <view class="card concl mt20">
+      <view class="row between">
+        <view class="h3">看到了什么</view>
+        <text class="tag tag-butter">{{peakNote}}</text>
+      </view>
+      <view class="sub mt12">
+        上半是麦克风收到的时域波形，下半是 1024 点 FFT 的幅度谱（汉宁窗，分辨率 15.6Hz）。口哨是近乎单频的窄峰，说话会出现成片的谐波簇，和弦则是一组等间距的峰。练习：先吹一个音记住位置，再降八度吹一次——频率正好减半。
+      </view>
+    </view>
+  </block>
+
+  <!-- ⑥ 震动滤波（手机加速度计实时测振与滤波） -->
+  <block wx:if="{{tab === 5}}">
+    <view class="card mt20">
+      <view class="mic-row">
+        <view class="row">
+          <view class="mic-btn {{accelOn ? 'on' : ''}}" bindtap="toggleAccel">
+            {{accelOn ? '⏹ 停止采集' : '📱 开加速度计'}}
+          </view>
+          <view class="chip ml12 {{accelSim ? 'chip-on' : ''}}" bindtap="toggleSimAccel">
+            {{accelSim ? '⏹ 停止模拟' : '🕹️ 模拟手摇'}}
+          </view>
+        </view>
+        <view class="mic-peak">
+          <text class="mp-k">实时手摇主频</text>
+          <text class="mp-v">{{accelPeakHz}} Hz</text>
+        </view>
+      </view>
+      <view class="mic-hint">{{accelHint}}</view>
+
+      <!-- 滤波器参数控制 -->
+      <view class="row wrap mt16">
+        <view
+          class="chip {{filterType === 'iir' ? 'chip-on' : ''}}"
+          bindtap="setFilterType"
+          data-type="iir"
+        >一阶低通 (IIR)</view>
+        <view
+          class="chip {{filterType === 'ma' ? 'chip-on' : ''}}"
+          bindtap="setFilterType"
+          data-type="ma"
+        >滑动均值 (FIR)</view>
+      </view>
+
+      <view class="ctl mt16" wx:if="{{filterType === 'iir'}}">
+        <view class="row between">
+          <text class="ctl-k">IIR 平滑系数 α（越小越平滑/截止频率越低）</text>
+          <text class="ctl-v">{{accelAlpha}}</text>
+        </view>
+        <slider min="0.02" max="0.60" step="0.02" value="{{accelAlpha}}" activeColor="#1FA97C" backgroundColor="#F1E2D6" block-size="20" data-k="accelAlpha" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+
+      <view class="ctl mt16" wx:else>
+        <view class="row between">
+          <text class="ctl-k">滑动均值窗口 W（点数）</text>
+          <text class="ctl-v">{{accelWin}} 点</text>
+        </view>
+        <slider min="3" max="25" step="2" value="{{accelWin}}" activeColor="#1FA97C" backgroundColor="#F1E2D6" block-size="20" data-k="accelWin" bindchanging="onSlide" bindchange="onSlide" />
+      </view>
+
+      <!-- 实时监测指标 -->
+      <view class="pole-kv mt12">
+        <view class="pkv">
+          <text class="pkv-k">晃动能量 RMS</text>
+          <text class="pkv-v">{{accelRms}} g</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">毛刺衰减度</text>
+          <text class="pkv-v ok">{{accelRed}}</text>
+        </view>
+        <view class="pkv">
+          <text class="pkv-k">传感器状态</text>
+          <text class="pkv-v {{accelOn || accelSim ? 'ok' : 'bad'}}">{{accelStatus}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card concl mt20">
+      <view class="row between">
+        <view class="h3">信号与系统原理：低通滤波怎样去毛刺？</view>
+        <text class="tag tag-mint">一阶离散系统</text>
+      </view>
+      <view class="sub mt12">
+        手机加速度计测出的是时域合成加速度 a(t)。晃动手机时，波形由「低频手摇大信号（1~3Hz）」与「肌肉手抖、机身碰撞的高频噪声（10~25Hz）」叠加而成。
+      </view>
+      <view class="sub mt8">
+        一阶低通差分方程 y[n] = α·x[n] + (1-α)·y[n-1]，在 z 域其传递函数为 H(z) = α / (1 - (1-α)z⁻¹)，极点位于 z = 1-α。当 α 较小时，极点靠近 z=1（低频直流点），对高频手抖形成强力衰减，因此绿色输出曲线几乎抹平了所有毛刺，只保留纯净的手摇晃动轨迹。
+      </view>
+    </view>
+  </block>
+
+  <view class="card-soft mt24" bindtap="goChapter">
+    <view class="row between">
+      <view class="grow">
+        <view class="h3">回到课本对应章节</view>
+        <view class="muted mt8">{{tab === 0 ? 'ch3 系统的时域分析 · 卷积' : tab === 1 ? 'ch4 连续周期信号的频域分析 · 傅里叶级数' : tab === 2 ? 'ch7 复频域分析 · 系统函数与极点' : tab === 3 ? 'ch6 系统的频域分析 · 采样定理' : tab === 4 ? 'ch4 连续时间信号的频域分析 · 频谱与带宽' : 'ch3 系统的时域分析 · 离散系统与差分方程'}}</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <button class="share-btn" open-type="share">📤 把这组参数分享给同学</button>
+
+  <view class="footer-tip">曲线由本机实时计算绘制；麦克风只在点「开麦克风」后启用，退出页面立即释放</view>
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

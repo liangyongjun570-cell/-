@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "math": "/components/math/math"
+  }
+}

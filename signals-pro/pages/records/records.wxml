@@ -1,0 +1,56 @@
+<view class="page no-tab {{theme}}">
+  <view class="head">
+    <view class="grow">
+      <view class="h1">学习记录</view>
+      <view class="sub mt8">最近 {{all.length}} 条 · 上限 30 条自动滚动</view>
+    </view>
+    <view class="clr" wx:if="{{all.length}}" bindtap="clear">清空</view>
+  </view>
+
+  <view class="row wrap filters">
+    <view
+      class="chip f-chip {{filter === item.k ? 'chip-on' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="k"
+      bindtap="setFilter"
+      data-k="{{item.k}}"
+    >{{item.t}} {{item.n}}</view>
+  </view>
+
+  <block wx:if="{{groups.length}}">
+    <view class="group" wx:for="{{groups}}" wx:key="date">
+      <view class="g-date">{{item.label}}</view>
+      <view class="card">
+        <view
+          class="r-cell"
+          wx:for="{{item.items}}"
+          wx:for-item="r"
+          wx:key="key"
+          bindtap="open"
+          data-type="{{r.type}}"
+          data-id="{{r.id}}"
+        >
+          <view class="r-icon ri-{{r.type}}">{{r.icon}}</view>
+          <view class="grow">
+            <view class="r-name ellipsis">{{r.name}}</view>
+            <view class="muted">ch{{r.ch}}{{r.sub ? ' · ' + r.sub : ''}}</view>
+          </view>
+          <text class="arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="card empty mt24" wx:else>
+    <image class="empty-img" src="/assets/theme/{{sticker}}.jpg" mode="aspectFit" />
+    <view class="sub">{{all.length ? '这一类还没有记录' : '还没有学习记录'}}</view>
+    <view class="muted mt8">打开任意知识点、公式或例题，这里会自动留下足迹</view>
+    <view class="btn btn-primary btn-sm mt16" bindtap="goChapters">去章节目录</view>
+  </view>
+
+  <view class="footer-tip">记录按日期分组，同一天重复打开同一内容只保留一条</view>
+  <view class="safe-bottom"></view>
+</view>
+
+<!-- 三级联动智能助教：桌宠悬挂 ⇄ 半屏伴读 ⇄ 全屏问答平台 -->
+<assistant />

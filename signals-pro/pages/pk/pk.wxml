@@ -1,0 +1,253 @@
+<view class="page {{theme}}">
+  <!-- ================= 大厅 ================= -->
+  <block wx:if="{{mode === 'lobby'}}">
+    <view class="head">
+      <view class="grow">
+        <view class="h1">信号擂台</view>
+        <view class="sub mt8">5 题抢答 · 越答越快 · 越界越强</view>
+      </view>
+      <view class="status {{cloudOn ? 'on' : ''}}">{{cloudOn ? '云房间已连' : '本机对局'}}</view>
+    </view>
+
+    <!-- 段位卡 -->
+    <view class="tier-card" style="--tc: {{tier.color}}">
+      <view class="tc-top">
+        <view class="tc-icon">{{tier.icon}}</view>
+        <view class="tc-main">
+          <view class="tc-name">{{tier.name}}</view>
+          <view class="tc-sub">{{rp}} 段位分 · 最高连胜 {{best}}</view>
+        </view>
+        <view class="tc-matches">{{matches}} 场</view>
+      </view>
+      <view class="tc-bar"><view class="tc-bar-fill" style="width: {{tier.progress * 100}}%"></view></view>
+      <view class="tc-foot">
+        <text wx:if="{{tier.i < 5}}">距 {{tier.nextName}} 还差 {{tier.toNext}} 分</text>
+        <text wx:else>已是顶点 · 守住 δ(t)</text>
+      </view>
+      <view class="tc-stats">
+        <view class="ts"><text class="ts-v">{{wins}}</text><text class="ts-k">胜</text></view>
+        <view class="ts"><text class="ts-v">{{losses}}</text><text class="ts-k">负</text></view>
+        <view class="ts"><text class="ts-v">{{rate}}%</text><text class="ts-k">胜率</text></view>
+        <view class="ts"><text class="ts-v">{{streak}}</text><text class="ts-k">连胜中</text></view>
+      </view>
+    </view>
+
+    <!-- 好友邀请横幅 -->
+    <view class="invite" wx:if="{{inviteTip}}">
+      <view class="inv-txt">{{inviteTip}}</view>
+      <view class="inv-btn" bindtap="acceptInvite">开始对战</view>
+    </view>
+
+    <!-- 入口 -->
+    <view class="entry" bindtap="tapRandom">
+      <view class="e-ico">⚔️</view>
+      <view class="e-main">
+        <view class="e-t">随机匹配</view>
+        <view class="e-s">按段位找对手，含 AI 学霸陪练</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+
+    <view class="entry" bindtap="openRoom">
+      <view class="e-ico">👥</view>
+      <view class="e-main">
+        <view class="e-t">邀好友对战</view>
+        <view class="e-s">生成房间卡片，转发到群一起打</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+
+    <view class="entry" bindtap="goMatch">
+      <view class="e-ico">🃏</view>
+      <view class="e-main">
+        <view class="e-t">变换对对碰 · 极速消消乐</view>
+        <view class="e-s">40秒时频配对挑战，单人极速刷榜</view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+
+    <!-- 规则 -->
+    <view class="card mt20">
+      <view class="h3">怎么算赢</view>
+      <view class="rule"><text class="r-i">1</text><text class="r-t">5 道核心题，每题 10 秒，点选项即判，没有反悔</text></view>
+      <view class="rule"><text class="r-i">2</text><text class="r-t">答对得 100 分，剩余时间越多加分越多，最快能拿 160</text></view>
+      <view class="rule"><text class="r-i">3</text><text class="r-t">连对触发 Combo：每多连一题总分再 +20%，最高 2 倍</text></view>
+      <view class="rule"><text class="r-i">4</text><text class="r-t">答错 -22 血、超时 -26 血，血条清零当场 KO</text></view>
+      <view class="rule"><text class="r-i">5</text><text class="r-t">比分相同比血条，都相同算平局；赢强手加的分更多</text></view>
+    </view>
+
+    <!-- 最近战绩 -->
+    <view class="card mt20" wx:if="{{recent.length}}">
+      <view class="row between">
+        <view class="h3">最近战绩</view>
+        <text class="muted">最近 5 局</text>
+      </view>
+      <view class="rc" wx:for="{{recent}}" wx:key="at">
+        <text class="rc-r {{item.win ? 'w' : 'l'}}">{{item.win ? '胜' : '负'}}</text>
+        <view class="rc-main">
+          <text class="rc-n">{{item.foeName}}{{item.ko ? ' · KO' : ''}}</text>
+          <text class="rc-s">{{item.at}} · {{item.my}} : {{item.foe}}</text>
+        </view>
+        <text class="rc-d {{item.delta >= 0 ? 'up' : 'down'}}">{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
+      </view>
+    </view>
+
+    <view class="footer-tip">对手行为由本机按段位模拟；开云开发后房间成绩会同步给好友</view>
+  </block>
+
+  <!-- ================= 匹配中 ================= -->
+  <block wx:elif="{{mode === 'matching'}}">
+    <view class="match">
+      <view class="mt-tip">{{matchTip}}</view>
+      <view class="mt-vs">
+        <view class="mt-side">
+          <image class="mt-av" src="{{me.avatar}}" mode="aspectFit" />
+          <view class="mt-n">{{me.name}}</view>
+          <view class="mt-tier" style="color: {{me.tierColor}}">{{me.tierName}}</view>
+        </view>
+        <view class="mt-mid">VS</view>
+        <view class="mt-side">
+          <image class="mt-av {{foe.show ? 'in' : 'searching'}}" src="{{foe.avatar}}" mode="aspectFit" />
+          <view class="mt-n">{{foe.show ? foe.name : '搜索中'}}</view>
+          <view class="mt-tier" style="color: {{foe.show ? foe.tierColor : '#A89384'}}">{{foe.show ? foe.tierName : '…'}}</view>
+        </view>
+      </view>
+      <view class="mt-dots"><text>●</text><text>●</text><text>●</text></view>
+    </view>
+  </block>
+
+  <!-- ================= 对局 ================= -->
+  <block wx:elif="{{mode === 'run'}}">
+    <view class="hud">
+      <view class="hud-top">
+        <view class="ht-l">
+          <image class="hud-av" src="{{me.avatar}}" mode="aspectFit" />
+          <view class="ht-txt">
+            <text class="ht-n">{{me.name}}</text>
+            <text class="ht-s">{{me.score}}</text>
+          </view>
+        </view>
+        <view class="ht-mid">
+          <text class="ht-idx">{{idx}} / {{totalN}}</text>
+          <text class="ht-t {{warn ? 'warn' : ''}}">{{left}}s</text>
+        </view>
+        <view class="ht-r">
+          <view class="ht-txt r">
+            <text class="ht-n">{{foe.name}}</text>
+            <text class="ht-s">{{foe.score}}</text>
+          </view>
+          <image class="hud-av" src="{{foe.avatar}}" mode="aspectFit" />
+        </view>
+      </view>
+      <view class="hud-bars">
+        <view class="hp"><view class="hp-fill me" style="width: {{me.hp}}%"></view></view>
+        <view class="hp rev"><view class="hp-fill foe" style="width: {{foe.hp}}%"></view></view>
+      </view>
+    </view>
+
+    <view class="time-bar"><view class="time-fill {{warn ? 'warn' : ''}}" style="width: {{leftPct}}%"></view></view>
+
+    <view class="float me" wx:if="{{floatMe}}">{{floatMe}}</view>
+    <view class="float foe" wx:if="{{floatFoe}}">{{floatFoe}}</view>
+
+    <view class="q-card">
+      <view class="q-meta">
+        <text class="q-ch">{{q.chName}}</text>
+        <text class="q-dif">{{q.difficulty}}</text>
+        <text class="q-combo" wx:if="{{combo >= 2}}">🔥 连对 x{{combo}}</text>
+      </view>
+      <view class="q-stem">{{q.stem}}</view>
+    </view>
+
+    <view class="opts">
+      <view
+        class="opt {{answered && index === correctIdx ? 'ok' : ''}} {{answered && index === picked && index !== correctIdx ? 'bad' : ''}}"
+        wx:for="{{q.options}}"
+        wx:key="*this"
+        data-i="{{index}}"
+        bindtap="pick"
+      >
+        <text class="opt-l">{{letters[index]}}</text>
+        <text class="opt-t">{{item}}</text>
+        <text class="opt-mark" wx:if="{{answered && index === correctIdx}}">✓</text>
+        <text class="opt-mark bad" wx:if="{{answered && index === picked && index !== correctIdx}}">✗</text>
+      </view>
+    </view>
+
+    <view class="quit" bindtap="quit">退出对局</view>
+  </block>
+
+  <!-- ================= 结算 ================= -->
+  <block wx:elif="{{mode === 'result'}}">
+    <view class="rs-head {{result.win ? 'win' : (result.draw ? 'draw' : 'lose')}}">
+      <view class="rs-title">{{result.ko ? (result.win ? 'K.O. 胜利' : 'K.O. 落败') : (result.win ? '胜利' : (result.draw ? '平局' : '惜败'))}}</view>
+      <view class="rs-word">{{result.word}}</view>
+    </view>
+
+    <view class="rs-score">
+      <view class="rss">
+        <image class="rss-av" src="{{result.myAvatar}}" mode="aspectFit" />
+        <text class="rss-n">我</text>
+        <text class="rss-v my">{{result.my}}</text>
+      </view>
+      <text class="rss-colon">:</text>
+      <view class="rss">
+        <image class="rss-av" src="{{result.foeAvatar}}" mode="aspectFit" />
+        <text class="rss-n">{{result.foeName}}</text>
+        <text class="rss-v foe">{{result.foe}}</text>
+      </view>
+    </view>
+
+    <view class="rs-grid">
+      <view class="rsg"><text class="rsg-v">{{result.myCorrect}}/{{result.total}}</text><text class="rsg-k">答对</text></view>
+      <view class="rsg"><text class="rsg-v">x{{result.maxCombo}}</text><text class="rsg-k">最长连击</text></view>
+      <view class="rsg"><text class="rsg-v">{{result.fastest}}</text><text class="rsg-k">最快单题</text></view>
+    </view>
+
+    <view class="rp-card">
+      <view class="row between">
+        <text class="rp-k">段位分</text>
+        <text class="rp-d {{rpDelta >= 0 ? 'up' : 'down'}}">{{rpDelta > 0 ? '+' : ''}}{{rpDelta}}</text>
+      </view>
+      <view class="rp-row">
+        <text class="rp-v">{{rp}}</text>
+        <text class="rp-tier" style="color: {{tier.color}}">{{tier.icon}} {{tier.name}}</text>
+      </view>
+      <view class="tc-bar"><view class="tc-bar-fill" style="width: {{tier.progress * 100}}%; background: {{tier.color}}"></view></view>
+      <view class="rp-tip" wx:if="{{tierUp}}">🎉 晋升到 {{tier.name}}</view>
+      <view class="rp-tip down" wx:elif="{{tierDown}}">掉到 {{tier.name}} 了，下局打回来</view>
+      <view class="rp-tip" wx:elif="{{friendScore !== null}}">同房间好友 {{friendName}} 拿了 {{friendScore}} 分</view>
+      <view class="rp-tip" wx:else>{{result.room ? '房间 ' + result.room + ' 已记录，转发让好友来刷同一套题' : '转发战报，让同学来挑战这个分数'}}</view>
+    </view>
+
+    <!-- 战报卡片 -->
+    <view class="report">
+      <view class="rp-head">
+        <text class="h3">战报卡片</text>
+        <text class="muted">可直接发群里</text>
+      </view>
+      <canvas type="2d" id="cvReport" class="report-cv"></canvas>
+      <view class="report-acts">
+        <view class="ract" bindtap="saveReport">保存到相册</view>
+        <button class="ract primary" open-type="share">分享战报</button>
+      </view>
+    </view>
+
+    <view class="rs-btns">
+      <view class="btn ghost" bindtap="backLobby">回大厅</view>
+      <view class="btn primary" bindtap="again">再来一局</view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </block>
+
+  <!-- ================= 房间弹层 ================= -->
+  <view class="mask" wx:if="{{roomOpen}}" bindtap="closeRoom"></view>
+  <view class="sheet" wx:if="{{roomOpen}}">
+    <view class="sheet-h">房间已建好</view>
+    <view class="room-code" bindtap="copyRoom">{{room}}</view>
+    <view class="sheet-s">点号码可复制。好友用你的分享卡片进来，拿到的是同一套题、同一个对手，打完比分数。</view>
+    <button class="sheet-btn primary" open-type="share">转发给好友 / 群</button>
+    <view class="sheet-btn ghost" bindtap="startFromRoom">我先开打</view>
+  </view>
+</view>

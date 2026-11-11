@@ -1,0 +1,128 @@
+<view class="page {{theme}}">
+  <!-- 顶部状态栏 -->
+  <view class="game-head">
+    <view class="gh-item">
+      <text class="gh-k">得分</text>
+      <text class="gh-v score-num">{{score}}</text>
+    </view>
+
+    <!-- 倒计时指示器 -->
+    <view class="timer-box {{timeLeft <= 10 ? 'urgent' : ''}}">
+      <view class="tb-circle">
+        <text class="tb-num">{{timeLeft}}</text>
+        <text class="tb-s">s</text>
+      </view>
+      <view class="tb-combo {{combo > 1 ? 'show' : ''}}">{{combo}} 连击! 🔥</view>
+    </view>
+
+    <view class="gh-item right">
+      <text class="gh-k">最高分: {{bestScore}}</text>
+      <view class="wave-tag">第 {{wave}} 波</view>
+    </view>
+  </view>
+
+  <!-- 时间进度条 -->
+  <view class="time-track">
+    <view
+      class="time-fill {{timeLeft <= 10 ? 'urgent' : ''}}"
+      style="width: {{timePct}}%;"
+    ></view>
+  </view>
+
+  <!-- 提示条 -->
+  <view class="tip-bar">
+    <text class="tip-dot">●</text>
+    <text class="tip-t">找出对应的【时域 f(t)】与【频域 F(jω)】，连对加分！</text>
+  </view>
+
+  <!-- 12 张卡牌矩阵 -->
+  <view class="card-grid">
+    <view
+      class="match-card {{item.domain}} {{item.selected ? 'selected' : ''}} {{item.matched ? 'matched' : ''}} {{item.wrong ? 'wrong' : ''}}"
+      wx:for="{{cards}}"
+      wx:key="cardId"
+      bindtap="onCardTap"
+      data-idx="{{index}}"
+    >
+      <!-- 消除完成覆盖层 -->
+      <view class="matched-mask" wx:if="{{item.matched}}">
+        <text class="check-icon">✓</text>
+      </view>
+
+      <view class="card-inner" wx:else>
+        <!-- 领域角标 -->
+        <view class="domain-badge {{item.domain}}">
+          {{item.domain === 'time' ? '时域 f(t)' : '频域 F(jω)'}}
+        </view>
+
+        <!-- 数学公式 -->
+        <view class="card-math">
+          <math src="{{item.math}}" size="30" />
+        </view>
+
+        <!-- 信号称谓 -->
+        <view class="card-title">{{item.name}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 连击浮动动画 -->
+  <view class="float-notice {{floatMsg ? 'show' : ''}}">{{floatMsg}}</view>
+
+  <!-- 底部快捷操作 -->
+  <view class="game-footer">
+    <view class="btn-ghost" bindtap="restartGame">🔄 重新开局</view>
+    <view class="btn-ghost" bindtap="goFormulas">📐 公式库</view>
+  </view>
+
+  <!-- 结算弹窗 -->
+  <view class="modal-mask" wx:if="{{gameOver}}">
+    <view class="modal-card">
+      <view class="res-head">
+        <view class="res-trophy">{{resTier.icon}}</view>
+        <view class="res-title">{{resTier.name}}</view>
+        <view class="res-sub">{{resTier.desc}}</view>
+      </view>
+
+      <view class="res-stats">
+        <view class="rs-item">
+          <text class="rs-v">{{score}}</text>
+          <text class="rs-k">最终得分</text>
+        </view>
+        <view class="rs-item">
+          <text class="rs-v">{{maxCombo}}</text>
+          <text class="rs-k">最高连击</text>
+        </view>
+        <view class="rs-item">
+          <text class="rs-v">{{matchedPairs}}</text>
+          <text class="rs-k">配对消除</text>
+        </view>
+        <view class="rs-item">
+          <text class="rs-v">{{wave}}</text>
+          <text class="rs-k">闯关波次</text>
+        </view>
+      </view>
+
+      <view class="new-best" wx:if="{{isNewBest}}">🎉 刷新个人最高纪录！</view>
+
+      <!-- 本局重点公式复盘 -->
+      <view class="review-box">
+        <view class="rb-title">📖 本局涉及变换对知识点</view>
+        <scroll-view scroll-y class="rb-list">
+          <view class="rb-item" wx:for="{{reviewedPairs}}" wx:key="id">
+            <view class="rb-name">{{item.name}}</view>
+            <view class="rb-desc">{{item.desc}}</view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 结算按钮 -->
+      <view class="modal-actions">
+        <button class="btn-primary" bindtap="restartGame">再战一局</button>
+        <button class="btn-share" open-type="share">📤 炫耀战绩</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>

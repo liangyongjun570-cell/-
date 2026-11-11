@@ -1,0 +1,734 @@
+/* ================= 三级联动智能助教 ================= */
+
+.asst-root {
+  --pet-blue: #4a9ee8;
+  --pet-blue-2: #7bc4f5;
+  --pet-deep: #2f6fb8;
+  --pet-screen: #10222f;
+  --pet-wave: #4de1c1;
+}
+
+/* ---------- 第一级：桌宠 ---------- */
+.pet-wrap {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 96px;
+  height: 96px;
+  /* 桌宠要压住页面里的卡片、雷达图 canvas 等一切内容，给足层级 */
+  z-index: 9990;
+  will-change: transform;
+  transition: opacity 0.18s ease;
+}
+
+.pet-wrap.offscreen {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pet {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  /* 吃掉触摸手势，避免拖桌宠时页面跟着滚动 */
+  touch-action: none;
+}
+
+/* 在线状态绿点 */
+.pet-dot {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #43c98b;
+  border: 1.5px solid #fff;
+  z-index: 4;
+  box-shadow: 0 0 0 0 rgba(67, 201, 139, 0.55);
+  animation: dot-pulse 2.2s ease-out infinite;
+}
+
+@keyframes dot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(67, 201, 139, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(67, 201, 139, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(67, 201, 139, 0);
+  }
+}
+
+/* 桌宠本体：真实卡通形象贴纸（透明底 PNG，随 mood 换表情） */
+.pet-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 96px;
+  height: 96px;
+  z-index: 3;
+  transform-origin: 50% 90%;
+  animation: pet-breathe 3.2s ease-in-out infinite;
+  transition: opacity 0.14s ease, transform 0.18s ease;
+  /* 白猫贴纸压在浅色页面上容易糊成一片，用投影把轮廓托出来 */
+  filter: drop-shadow(0 4px 10px rgba(120, 84, 60, 0.2));
+}
+
+@keyframes pet-breathe {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.035) translateY(-2px);
+  }
+}
+
+/* 换表情时的淡出淡入，避免画面直接跳变 */
+.pet.swap .pet-img {
+  animation: none;
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+/* 拖拽中：停止呼吸动画，改用手感更强的倾斜缩放 */
+.pet.drag .pet-img {
+  animation: none;
+  transform: scale(1.08) rotate(-5deg);
+}
+
+.pet.drag .pet-shadow {
+  transform: scale(0.86);
+  opacity: 0.1;
+}
+
+/* 落地影 */
+.pet-shadow {
+  position: absolute;
+  left: 26px;
+  bottom: 0;
+  width: 44px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(90, 62, 46, 0.18);
+  filter: blur(3px);
+  z-index: 2;
+  transition: all 0.16s ease;
+}
+
+/* ---------- 第二级：半屏抽屉 ---------- */
+.half-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(40, 28, 20, 0.22);
+  z-index: 9980;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.half {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 55vh;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -12px 40px rgba(90, 60, 40, 0.18);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: sheet-up 0.26s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 带自定义 tabBar 的页面：抽屉整体抬到 tabBar 之上
+   原生 tabBar 层在页面之上，不抬高的话底部输入框会被整条盖住、点不到 */
+.half.above-tab {
+  bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* PC / 宽屏：右下悬浮窗 */
+@media (min-width: 700px) {
+  .half {
+    left: auto;
+    right: 18px;
+    bottom: 18px;
+    width: 450px;
+    height: 65vh;
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(90, 60, 40, 0.22);
+    animation: pop-in 0.22s ease;
+  }
+
+  /* 宽屏没有 tabBar，复位成悬浮窗自己的间距 */
+  .half.above-tab {
+    bottom: 18px;
+  }
+}
+
+.half-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px 10px;
+  border-bottom: 1px solid #f4e9e0;
+  flex-shrink: 0;
+}
+
+.hd-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hd-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(150deg, #eaf6ff, #d6ebfd);
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(61, 134, 212, 0.18);
+}
+
+.hd-meta {
+  min-width: 0;
+}
+
+.hd-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #33261f;
+  line-height: 1.3;
+}
+
+.hd-ctx {
+  font-size: 11px;
+  color: #a89384;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.hd-acts {
+  display: flex;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.hd-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #fdf3ec;
+  color: #7b685c;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hd-btn:active {
+  background: #ffe5da;
+  color: #e05536;
+}
+
+/* 风格切换 */
+.half-styles {
+  display: flex;
+  gap: 7px;
+  padding: 9px 15px 3px;
+  flex-shrink: 0;
+}
+
+.st {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  padding: 7px 0;
+  border-radius: 10px;
+  background: #f8f1ea;
+  color: #7b685c;
+  transition: all 0.16s ease;
+}
+
+.st.on {
+  background: linear-gradient(135deg, #f2694b, #ff8d6e);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(242, 105, 75, 0.28);
+}
+
+/* 常驻快捷追问 */
+.half-quick {
+  flex-shrink: 0;
+  padding: 5px 12px 2px;
+}
+
+.hq-scroll {
+  white-space: nowrap;
+}
+
+.hq {
+  display: inline-block;
+  padding: 6px 11px;
+  margin-right: 6px;
+  border-radius: 9px;
+  background: #fdf3ec;
+  border: 1px solid #f3e3d6;
+  color: #7b685c;
+  font-size: 11.5px;
+  line-height: 1.3;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.hq:active {
+  background: #ffe5da;
+  color: #e05536;
+}
+
+/* 消息区 */
+.half-body {
+  flex: 1;
+  height: 0;
+  padding: 8px 15px 0;
+  box-sizing: border-box;
+}
+
+.half-empty {
+  padding: 20px 0 10px;
+}
+
+.he-t {
+  font-size: 14px;
+  color: #3d2e25;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+/* 空态：3 张典型考题缩略图 */
+.he-sub {
+  font-size: 12.5px;
+  color: #8b7768;
+  margin: 2px 0 10px;
+}
+
+.he-papers {
+  display: flex;
+  gap: 9px;
+}
+
+.he-paper {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #ecdfd4;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.he-paper:active {
+  border-color: #f2a68f;
+  background: #fff6f2;
+}
+
+.he-paper-img {
+  width: 100%;
+  height: 74px;
+  display: block;
+  background: #f4efe9;
+}
+
+.he-paper-t {
+  display: block;
+  font-size: 11.5px;
+  color: #6b574a;
+  text-align: center;
+  padding: 5px 2px 6px;
+  line-height: 1.2;
+}
+
+/* 消息里的图片（拍照识题） */
+.msg-img {
+  width: 168px;
+  height: 224px;
+  border-radius: 10px;
+  display: block;
+  margin-bottom: 6px;
+  background: #f4efe9;
+}
+
+/* 流式光标 */
+.caret {
+  color: #f2694b;
+  font-size: 13px;
+}
+
+/* 相机按钮 */
+.cam-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #f7f1eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.cam-btn:active {
+  background: #ffe5da;
+}
+
+.he-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chip {
+  background: #fff;
+  border: 1px solid #d9c7b7;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  color: #2b1f16;
+  line-height: 1.5;
+  box-shadow: 0 1px 4px rgba(90, 60, 40, 0.08);
+}
+
+.chip:active {
+  background: #fff5ee;
+  border-color: #e8c4ad;
+}
+
+.msg {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.msg.user {
+  justify-content: flex-end;
+}
+
+.msg-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: linear-gradient(150deg, #8ccdf8, #3d86d4);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-shadow: 0 2px 6px rgba(61, 134, 212, 0.22);
+}
+
+.msg-body {
+  max-width: 82%;
+  min-width: 0;
+}
+
+.msg.user .msg-body {
+  background: linear-gradient(135deg, #e85a38, #ff7a55);
+  color: #fff;
+  border-radius: 14px 14px 4px 14px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(232, 90, 56, 0.2);
+}
+
+.msg-text {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #fff;
+  word-break: break-word;
+}
+
+.msg.assistant .msg-body {
+  background: #fff;
+  border: 1px solid #e8d9ce;
+  border-radius: 4px 14px 14px 14px;
+  padding: 12px 13px;
+  box-shadow: 0 2px 8px rgba(90, 60, 40, 0.08);
+}
+
+.blk-p {
+  display: block;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #2b1f16;
+  margin-bottom: 8px;
+}
+
+.blk-step {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+
+.st-i {
+  width: 17px;
+  height: 17px;
+  border-radius: 6px;
+  background: #ffe5da;
+  color: #e05536;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 17px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.st-t {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.66;
+  color: #433428;
+  word-break: break-word;
+}
+
+.blk-quote {
+  border-left: 3px solid #efb75b;
+  background: #fdf5e6;
+  padding: 8px 10px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: #6b543f;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.blk-ans {
+  background: #e9f7ef;
+  border: 1px solid #c6ebd6;
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 13px;
+  color: #2b6b48;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.blk-tip {
+  background: #fff8e8;
+  border: 1px dashed #f0d9a8;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: #8a6a2e;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.blk-code {
+  background: #1b2733;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+
+.code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #16202a;
+}
+
+.code-lang {
+  font-size: 10.5px;
+  color: #7fa7c9;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.code-copy {
+  font-size: 10.5px;
+  color: #4de1c1;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(77, 225, 193, 0.12);
+}
+
+.code-txt {
+  display: block;
+  padding: 10px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #cfe3f2;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.blk-fm {
+  background: #fff;
+  border: 1px solid #f0e2d6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 9px;
+  overflow-x: auto;
+}
+
+.fm-row {
+  padding: 3px 0;
+}
+
+.refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px dashed #f0e2d6;
+}
+
+.ref {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #eef5fc;
+  color: #3d78b8;
+  border: 1px solid #d8e8f7;
+}
+
+.ref:active {
+  background: #dcecfb;
+}
+
+.typing {
+  font-size: 12px;
+  color: #a89384;
+  padding: 4px 0 12px 34px;
+}
+
+.half-pad {
+  height: 14px;
+}
+
+/* 底部输入 */
+.half-foot {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 12;
+  border-top: 1px solid #f4e9e0;
+  background: #fffdfb;
+  /* 无 tabBar 的页面抽屉贴着屏幕底，必须让开 iPhone 底部手势区，
+     否则输入框正好落在 home indicator 上，点不动 */
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+}
+
+/* 有 tabBar 时抽屉已整体抬高，这里不再重复留白 */
+.half.above-tab .half-foot {
+  padding-bottom: 6px;
+}
+
+.symbar {
+  white-space: nowrap;
+  padding: 7px 12px 3px;
+}
+
+.sym {
+  display: inline-block;
+  padding: 4px 10px;
+  margin-right: 6px;
+  border-radius: 8px;
+  background: #f6efe9;
+  color: #6b5445;
+  font-size: 12px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.sym:active {
+  background: #ffe5da;
+  color: #e05536;
+}
+
+.inbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 2px;
+}
+
+.in {
+  flex: 1;
+  height: 38px;
+  background: #f7f1eb;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #33261f;
+}
+
+.in-ph {
+  color: #b8a495;
+  font-size: 13px;
+}
+
+.send {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: #eee3da;
+  color: #b8a495;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send.on {
+  background: linear-gradient(135deg, #f2694b, #ff8d6e);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(242, 105, 75, 0.3);
+}
