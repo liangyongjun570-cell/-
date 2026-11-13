@@ -326,9 +326,10 @@ exports.main = async (event) => {
     }
   }
 
-  // 拍照识题：云存储 fileID -> 临时链接 -> 微信 OCR
-  // 需要在「微信公众平台 -> 开发 -> 接口设置」里开通 OCR；未开通时返回 ok:false，
-  // 小程序端会自动退回本地像素分析 + 规则检查表，不影响主流程。
+  // 拍照识题：云存储 fileID -> 临时链接 -> 微信 OCR（云调用）
+  // 需在本目录 config.json 的 permissions.openapi 里声明 ocr.printedText / ocr.handwriting
+  // （已声明；改权限后重新上传部署，配置有 10 分钟缓存，报 -604101 稍等再试）。
+  // 每日免费额度 100 次；未开通/超限时返回 ok:false，小程序端自动退回本地像素分析 + 规则检查表。
   if (action === 'ocr') {
     const fileID = str(event.fileID, 200);
     if (!fileID) return { ok: false, msg: 'no-file' };
