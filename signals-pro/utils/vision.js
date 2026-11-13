@@ -519,6 +519,19 @@ function reportBlocks(rep) {
   return out;
 }
 
+// ---------- 拍照追问 AI ----------
+// OCR 取到文字后组装提示词，交给 AI 链真解题 / 真批改（页面端 / 组件端共用）
+function photoPrompt(text) {
+  return [
+    '我用手机拍了一页内容，OCR 识别的文字如下（可能有识别错漏，自行纠错理解）：',
+    '「' + String(text || '').slice(0, 1200) + '」',
+    '请先判断这是题目还是学生的推导过程：',
+    '· 是题目：按《信号与系统》教材记号（x(t)/f(t)、F(jω)、Sa 函数、0⁻ 积分下限）分步骤给出完整解答，最后单独一行列出关键结论；',
+    '· 是推导：逐步批改，指出每处错误、给出正确写法和原因；',
+    '最后用一句话总结这类问题最容易踩的坑。',
+  ].join('\n');
+}
+
 module.exports = {
   RULES,
   PAPERS,
@@ -529,4 +542,5 @@ module.exports = {
   judge,
   build,
   reportBlocks,
+  photoPrompt,
 };

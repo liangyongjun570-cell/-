@@ -403,13 +403,41 @@ Component({
       const tx = vision.ocr(path);
       Promise.all([px, tx]).then((arr) => {
         const rep = vision.build(paper, arr[0], arr[1]);
-        const blocks = this.reportBlocks(rep);
+        // 本地快报先落一条：搜题命中 + 符号规范检查，拍完立刻可见
         this.commit(acc, sid, {
           text: paper ? '📷 已批改：' + paper.title : '📷 识题结果',
-          blocks: blocks,
-          refs: { ch: paper && paper.sub ? '' : '', lab: -1 },
+          blocks: this.reportBlocks(rep),
+          refs: { ch: '', lab: -1 },
         });
+        // 取到文字就追问 AI：真解题 / 真批改（与全屏助教页同一套降级链）
+        if (rep.text) this.askAIAboutPhoto(acc, sid, rep.text);
       });
+    },
+
+    // 拍照追问 AI：OCR 文字组装成提示词，自定义模型 → 云开发 AI → 离线引擎
+    askAIAboutPhoto(acc, sid, text) {
+      this.setData({ busy: true, petLine: A.PET_MOODS.think });
+      this.setMood('think');
+      const q = vision.photoPrompt(text);
+      const cfg = ai.readCfg();
+      if (cfg.enabled) {
+        ai
+          .remote(cfg, { q: q, style: this.data.style, ctx: this.data.ctx, history: [] })
+          .then((r) => {
+            if (r.ok) {
+              this.commit(acc, sid, {
+                text: r.title,
+                blocks: r.blocks,
+                refs: { ch: this.data.ctx.chapter, lab: -1 },
+                via: r.via === 'cloud' ? 'cloud' : 'direct',
+              });
+            } else {
+              this.cloudOrLocal(acc, sid, q, ai.errText(r.err, r.msg));
+            }
+          });
+        return;
+      }
+      this.cloudOrLocal(acc, sid, q, '');
     },
 
     // 把批改报告转成消息块

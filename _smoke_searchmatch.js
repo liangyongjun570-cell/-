@@ -70,6 +70,17 @@ const textsNo = blocksNo.map((b) => b.text || '').join('\n');
 ok(textsNo.indexOf('没命中内置题库') >= 0, '未命中时给明确提示');
 ok(textsNo.indexOf('批改结论') >= 0, '批改结论仍在');
 
+console.log('\n== photoPrompt 提示词组装 ==');
+ok(typeof vision.photoPrompt === 'function', '导出 photoPrompt');
+const prompt1 = vision.photoPrompt(q1.stem);
+ok(prompt1.indexOf(q1.stem.slice(0, 10)) >= 0, '包含 OCR 原文');
+ok(prompt1.indexOf('题目') >= 0 && prompt1.indexOf('推导') >= 0, '要求模型区分题目与推导');
+ok(prompt1.indexOf('F(jω)') >= 0, '锁定教材记号口径');
+ok(prompt1.length < 2400, '长度不超 ai 链单条上限', 'len=' + prompt1.length);
+const longText = new Array(200).join('长文本内容测试');
+ok(vision.photoPrompt(longText).indexOf(longText) < 0, '超长 OCR 文字被截断');
+ok(vision.photoPrompt('').indexOf('「」') >= 0, '空文字安全');
+
 console.log('\n== 内置样例卷走通搜题+批改 ==');
 const paper = vision.PAPERS[0];
 const repP = vision.build(paper, null, paper.text);
