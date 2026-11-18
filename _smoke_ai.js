@@ -353,6 +353,10 @@ const askOpts = {
     ok('切片正文进入 system（卷积定义）', sys2Text.indexOf('冲激响应加权的叠加积分') >= 0);
     ok('切片带章节标注（第3章）', sys2Text.indexOf('第3章') >= 0);
     ok('RAG 关键词命中（rag 动作被调用）', cloudLog.slice(cloudBefore).some((c) => c.data && c.data.action === 'rag' && Array.isArray(c.data.keywords) && c.data.keywords.length > 0));
+    ok('命中章节带回前端（ragCh 标注用）', rRag.ok && rRag.ragCh === '第3章', rRag && rRag.ragCh);
+    // 无命中时 ragCh 为空
+    const rNoRag = await ai.remote(CFG, { q: '今天天气怎么样？', style: 'rigorous', history: [] });
+    ok('RAG 无命中时 ragCh 为空', rNoRag.ok && !rNoRag.ragCh, rNoRag && rNoRag.ragCh);
     cloudHandler = null;
   }
 

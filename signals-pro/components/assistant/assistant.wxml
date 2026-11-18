@@ -123,6 +123,7 @@
             </view>
           </block>
           <view class="msg-via" wx:if="{{item.via}}">{{item.via === 'cloud' ? '自定义模型 · 云函数中转' : '自定义模型 · 直连'}}</view>
+          <view class="msg-via" wx:if="{{item.ragCh}}">已对照教材：{{item.ragCh}}</view>
         </view>
       </view>
 

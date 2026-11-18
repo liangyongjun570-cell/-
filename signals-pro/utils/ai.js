@@ -28,6 +28,7 @@ const SYS = [
   '回答用简体中文、分点。概念性问答控制在 320 字内；推导题、计算题必须给出完整步骤（每步写明依据的性质/定理），步骤部分不限字数。',
   '涉及稳定性的结论必须说明依据（极点位置 / ROC 是否含虚轴或单位圆）。',
   '若下方给出「教材相关要点」，回答优先采用其中的口径和记号。',
+  '教材原文切片里没有的公式编号、页码、章节号一律不要写（如「式2-20」「教材P46」），直接给结论不标出处；切片内容与你的通用知识冲突时以切片为准。',
   '公式用纯文本表示（如 F(jω)=∫f(t)e^(-jωt)dt），不要输出 LaTeX、Markdown 标记或 $$ 符号。',
 ].join('\n');
 
@@ -203,6 +204,7 @@ function stream(opts) {
 
   let finished = false;
   let acc = '';
+  let ragCh = '';
   let timer = null;
 
   const finish = (ok, reason) => {
@@ -219,6 +221,7 @@ function stream(opts) {
         text: text,
         blocks: toBlocks(text),
         refs: { ch: (opts.ctx && opts.ctx.chapter) || '', lab: -1 },
+        ragCh: ragCh,
         source: 'cloud',
       });
     } else {
@@ -232,6 +235,12 @@ function stream(opts) {
 
   rag(q).then((chunks) => {
     if (finished) return;
+    // 命中的章节列表，回答完成时带回前端标注「已对照教材」
+    ragCh = (chunks || [])
+      .map((c) => String(c.ch || '').trim())
+      .filter((v, i, a) => v && a.indexOf(v) === i)
+      .slice(0, 3)
+      .join('、');
     let sys = SYS;
     if (opts.ctx && opts.ctx.label) sys += '\n当前页面：' + opts.ctx.label + '。';
     if (STYLE_HINT[opts.style]) sys += '\n回答风格要求：' + STYLE_HINT[opts.style];
@@ -471,6 +480,12 @@ function remote(cfg, opts) {
     // 教材知识库切片（云端 RAG）：未开云开发/无命中时立即返回空数组，零网络零延迟
     rag(q).then((chunks) => {
       chunks = chunks || [];
+      // 命中的章节列表，回答成功时带回前端标注「已对照教材」
+      const ragCh = chunks
+        .map((ck) => String(ck.ch || '').trim())
+        .filter((v, i, a) => v && a.indexOf(v) === i)
+        .slice(0, 3)
+        .join('、');
       let sys = SYS;
       if (opts && opts.ctx && opts.ctx.label) sys += '\n当前页面：' + opts.ctx.label + '。';
       if (opts && STYLE_HINT[opts.style]) sys += '\n回答风格要求：' + STYLE_HINT[opts.style];
@@ -493,7 +508,7 @@ function remote(cfg, opts) {
     if (!url || !c.key) {
       viaCloud(c, msgs, q).then((r) => {
         // 中转通道本身断了才补语境；模型侧的 key/model 等错误保持原样交给 errText
-        if (r.ok || (r.err !== 'net' && r.err !== 'timeout')) return resolve(r);
+        if (r.ok || (r.err !== 'net' && r.err !== 'timeout')) return resolve(r.ok ? Object.assign(r, { ragCh: ragCh }) : r);
         resolve({ ok: false, err: r.err, msg: '云函数中转不可用：' + (r.msg || '') });
       });
       return;
@@ -547,7 +562,7 @@ function remote(cfg, opts) {
           resolve({ ok: false, err: 'empty' });
           return;
         }
-        resolve({ ok: true, title: q.slice(0, 20), blocks: toBlocks(text), text: text });
+        resolve({ ok: true, title: q.slice(0, 20), blocks: toBlocks(text), text: text, ragCh: ragCh });
       },
       fail: (e) => {
         // fail 的 errMsg 里带着真因，别一律糊成「网络不通」：
@@ -558,7 +573,7 @@ function remote(cfg, opts) {
         else if (/domain/i.test(msg)) err = 'domain';
         // 直连被拦/不通时改走云函数中转（不受 request 域名白名单限制）再试一次
         viaCloud(c, msgs, q).then((r2) => {
-          if (r2.ok) return resolve(r2);
+          if (r2.ok) return resolve(Object.assign(r2, { ragCh: ragCh }));
           resolve({ ok: false, err: err, msg: msg + (r2.msg ? '；云函数中转也不可用：' + r2.msg : '') });
         });
       },

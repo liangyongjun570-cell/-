@@ -207,6 +207,7 @@ Component({
         };
         if (m.img) item.img = m.img;
         if (m.via) item.via = m.via;
+        if (m.ragCh) item.ragCh = m.ragCh;
         if (m.blocks && m.blocks.length) {
           item.blocks = m.blocks.map((b, j) => {
             const bb = { k: 'b' + i + '_' + j, type: b.type || 'p' };
@@ -266,6 +267,7 @@ Component({
                 blocks: r.blocks,
                 refs: { ch: this.data.ctx.chapter, lab: -1 },
                 via: r.via === 'cloud' ? 'cloud' : 'direct',
+                ragCh: r.ragCh || '',
               });
             } else {
               // 说清失败原因（Key 错 / 域名没放行 / 超时），再回退，别默默换引擎
@@ -347,6 +349,7 @@ Component({
         blocks: msg.blocks,
         refs: msg.refs,
         via: msg.via || '',
+        ragCh: msg.ragCh || '',
         ts: Date.now(),
       });
       this.reload();
@@ -430,6 +433,7 @@ Component({
                 blocks: r.blocks,
                 refs: { ch: this.data.ctx.chapter, lab: -1 },
                 via: r.via === 'cloud' ? 'cloud' : 'direct',
+                ragCh: r.ragCh || '',
               });
             } else {
               this.cloudOrLocal(acc, sid, q, ai.errText(r.err, r.msg));

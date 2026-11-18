@@ -140,6 +140,7 @@ Page({
       const item = { id: m.id || 'm' + i, role: m.role, text: m.text || '' };
       if (m.img) item.img = m.img;
       if (m.via) item.via = m.via;
+      if (m.ragCh) item.ragCh = m.ragCh;
       if (m.blocks && m.blocks.length) {
         item.blocks = m.blocks.map((b, j) => {
           const bb = { k: 'b' + i + '_' + j, type: b.type || 'p' };
@@ -218,6 +219,7 @@ Page({
               blocks: r.blocks,
               refs: { ch: this.data.ctx.chapter, lab: -1 },
               via: r.via === 'cloud' ? 'cloud' : 'direct',
+              ragCh: r.ragCh || '',
             });
             this.setData({ engineLabel: this.engineLabelOf(cfg) });
           } else {
@@ -297,6 +299,7 @@ Page({
       blocks: msg.blocks,
       refs: msg.refs,
       via: msg.via || '',
+      ragCh: msg.ragCh || '',
       ts: Date.now(),
     });
     this.setData({ busy: false });
@@ -373,6 +376,7 @@ Page({
               blocks: r.blocks,
               refs: { ch: this.data.ctx.chapter, lab: -1 },
               via: r.via === 'cloud' ? 'cloud' : 'direct',
+              ragCh: r.ragCh || '',
             });
             this.setData({ engineLabel: this.engineLabelOf(cfg) });
           } else {
