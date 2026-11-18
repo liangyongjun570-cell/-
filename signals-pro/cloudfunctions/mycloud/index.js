@@ -62,7 +62,7 @@ function chatProxy(event) {
     .slice(0, 8)
     .map((m) => ({
       role: m && (m.role === 'system' || m.role === 'assistant') ? m.role : 'user',
-      content: str(m && m.content, 2000),
+      content: str(m && m.content, 4000),
     }))
     .filter((m) => m.content);
   if (!msgs.length) return { ok: false, err: 'empty', msg: 'no-messages' };

@@ -25,10 +25,36 @@ const STYLE_HINT = {
 const SYS = [
   '你是《信号与系统》课程的助教，服务对象是中国本科生。',
   '符号必须与教材（2017，上海交通大学出版社）一致：输入 f(t)、输出 y(t)、频谱 F(jω)、抽样函数 Sa(t)=sin t/t、单边拉普拉斯变换积分下限 0⁻、周期信号级数系数 Cₙ。',
-  '回答用简体中文，分点、简洁，不超过 320 字；不要编造教材页码。',
+  '回答用简体中文、分点。概念性问答控制在 320 字内；推导题、计算题必须给出完整步骤（每步写明依据的性质/定理），步骤部分不限字数。',
   '涉及稳定性的结论必须说明依据（极点位置 / ROC 是否含虚轴或单位圆）。',
+  '若下方给出「教材相关要点」，回答优先采用其中的口径和记号。',
   '公式用纯文本表示（如 F(jω)=∫f(t)e^(-jωt)dt），不要输出 LaTeX、Markdown 标记或 $$ 符号。',
 ].join('\n');
+
+// ---------- 本地教材要点注入 ----------
+// 用 search 索引检索与问题相关的讲义/公式条目，拼成参考上下文放进 system prompt。
+// 全本地、零网络；注入总量控制在 700 字内，避免挤占云函数中转的单条上限。
+let _searchMod = null;
+function localRefs(q) {
+  try {
+    if (!_searchMod) _searchMod = require('./search');
+    const r = _searchMod.query(q);
+    const items = ((r && r.items) || []).slice(0, 4);
+    let out = '';
+    let used = 0;
+    items.forEach((it) => {
+      const body = String(it.summary || '').replace(/\s+/g, ' ').trim();
+      if (!body) return;
+      const piece = '- ' + String(it.title || '').slice(0, 30) + '：' + body.slice(0, 160) + '\n';
+      if (used + piece.length > 700) return;
+      out += piece;
+      used += piece.length;
+    });
+    return out;
+  } catch (e) {
+    return '';
+  }
+}
 
 // ---------- RAG 关键词 ----------
 // 从公式名、别名、章节名里建词表，命中即作为检索词，避免中文分词依赖
@@ -443,6 +469,8 @@ function remote(cfg, opts) {
     let sys = SYS;
     if (opts && opts.ctx && opts.ctx.label) sys += '\n当前页面：' + opts.ctx.label + '。';
     if (opts && STYLE_HINT[opts.style]) sys += '\n回答风格要求：' + STYLE_HINT[opts.style];
+    const refs = localRefs(q);
+    if (refs) sys += '\n教材相关要点（优先采用这些口径）：\n' + refs;
     const msgs = [{ role: 'system', content: sys }];
     ((opts && opts.history) || []).slice(-4).forEach((h) => {
       if (h && h.role && h.text) msgs.push({ role: h.role, content: String(h.text).slice(0, 400) });
@@ -470,8 +498,8 @@ function remote(cfg, opts) {
       },
       data: {
         model: c.model || DEFAULT_MODEL,
-        temperature: 0.5,
-        max_tokens: 800,
+        temperature: 0.4,
+        max_tokens: 1400,
         messages: msgs,
       },
       success: (res) => {

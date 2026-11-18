@@ -136,7 +136,7 @@ const askOpts = {
   ok('历史只带最近 4 条 + 1 条提问 = 6 条消息', okRes.req.data.messages.length === 6, okRes.req.data.messages.length);
   ok('最后一条是用户问题', okRes.req.data.messages.slice(-1)[0].role === 'user' && okRes.req.data.messages.slice(-1)[0].content === '卷积为什么要翻转');
   ok('model 名透传', okRes.req.data.model === 'deepseek-chat');
-  ok('带 max_tokens 上限（防跑飞）', okRes.req.data.max_tokens === 800, okRes.req.data.max_tokens);
+  ok('带 max_tokens 上限（防跑飞）', okRes.req.data.max_tokens === 1400, okRes.req.data.max_tokens);
 
   // 401 -> key
   const r401 = await runRemote((opt) => opt.success({ statusCode: 401, data: {} }), askOpts);
@@ -288,6 +288,23 @@ const askOpts = {
         { urls: reqLog.slice(before).map((x) => x.url), r: rPre }
       );
     }
+  }
+
+  // ---------- 6.5 教材要点注入 + 推导题放开字数 ----------
+  {
+    const before = reqLog.length;
+    reqHandler = (opt) => opt.success({ statusCode: 200, data: { choices: [{ message: { content: 'ok' } }] } });
+    const rRef = await ai.remote(CFG, { q: '什么是卷积？怎么计算卷积积分？', style: 'rigorous', ctx: askOpts.ctx, history: [] });
+    const sysMsg = rRef.ok && reqLog[before] && reqLog[before].data && reqLog[before].data.messages
+      ? reqLog[before].data.messages.filter((m) => m.role === 'system')[0]
+      : null;
+    const sysText = sysMsg ? sysMsg.content : '';
+    ok('remote 注入教材相关要点', !!sysText && sysText.indexOf('教材相关要点') >= 0, sysText ? sysText.length : 'no-sys');
+    ok('注入要点总量有上限（system 不超 1800 字）', !!sysText && sysText.length < 1800, sysText && sysText.length);
+    ok('推导题不再被 320 字上限卡死', !!sysText && sysText.indexOf('完整步骤') >= 0);
+    ok('推导题要求逐步写明依据', !!sysText && sysText.indexOf('性质/定理') >= 0);
+    ok('输出上限提到 1400', rRef.ok && reqLog[before].data.max_tokens === 1400, reqLog[before].data.max_tokens);
+    ok('采样 temperature=0.4', rRef.ok && reqLog[before].data.temperature === 0.4, reqLog[before].data.temperature);
   }
 
   // ---------- 7. 回答来源标注：via 穿透消息重建白名单（页面层） ----------
