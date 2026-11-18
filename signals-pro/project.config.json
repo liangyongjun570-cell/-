@@ -17,6 +17,14 @@
       {
         "value": "cloudfunctions",
         "type": "folder"
+      },
+      {
+        "value": "utils/ai.key.local.js",
+        "type": "file"
+      },
+      {
+        "value": "utils/ai.key.example.js",
+        "type": "file"
       }
     ],
     "include": []
