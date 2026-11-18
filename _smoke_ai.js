@@ -49,7 +49,7 @@ ok('默认配置：小米 MiMo 且始终启用（启用与 Key 解绑）', (() =
   return (
     c.enabled === true &&
     c.baseUrl === 'https://api.xiaomimimo.com/v1' &&
-    c.model === 'mimo-v2.6-flash' &&
+    c.model === 'mimo-v2.6-pro' &&
     typeof c.key === 'string' &&
     (c.key === '' || /^sk-/.test(c.key))
   );
@@ -60,7 +60,7 @@ ok('readCfg 空存储时回落预置配置', (() => {
   return (
     c.enabled === true &&
     c.baseUrl === 'https://api.xiaomimimo.com/v1' &&
-    c.model === 'mimo-v2.6-flash' &&
+    c.model === 'mimo-v2.6-pro' &&
     typeof c.key === 'string'
   );
 })());
@@ -73,12 +73,23 @@ ok('saveCfg 后 readCfg 往返一致', (() => {
 
 ok('saveCfg 补默认 baseUrl/model（小米）', (() => {
   const c = ai.saveCfg({ enabled: true, key: 'k' });
-  return c.baseUrl === 'https://api.xiaomimimo.com/v1' && c.model === 'mimo-v2.6-flash';
+  return c.baseUrl === 'https://api.xiaomimimo.com/v1' && c.model === 'mimo-v2.6-pro';
 })());
 
 ok('saveCfg 关闭时不残留 enabled', (() => {
   const c = ai.saveCfg({ enabled: false, key: 'k' });
   return c.enabled === false && ai.readCfg().enabled === false;
+})());
+
+// flash -> pro 平滑迁移：旧存储里的 flash 升级为新默认 pro，用户自填的模型不动
+ok('旧配置 flash 自动迁移为 pro', (() => {
+  wx.setStorageSync('ssp_api_cfg', { enabled: true, key: 'sk-x', baseUrl: 'https://api.xiaomimimo.com/v1', model: 'mimo-v2.6-flash' });
+  const c = ai.readCfg();
+  return c.model === 'mimo-v2.6-pro' && c.enabled === true && c.key === 'sk-x';
+})());
+ok('用户自填的模型不被迁移覆盖', (() => {
+  wx.setStorageSync('ssp_api_cfg', { enabled: true, key: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' });
+  return ai.readCfg().model === 'deepseek-chat';
 })());
 
 ok('saveCfg 允许启用且无 Key（走云函数中转）', (() => {

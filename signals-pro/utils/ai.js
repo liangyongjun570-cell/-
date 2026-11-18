@@ -322,7 +322,7 @@ function stream(opts) {
 // ---------- 自定义模型（OpenAI 兼容接口，Key 只存本机不进上传包之外的位置） ----------
 const CFG_KEY = 'ssp_api_cfg';
 const DEFAULT_BASE = 'https://api.xiaomimimo.com/v1';
-const DEFAULT_MODEL = 'mimo-v2.6-flash';
+const DEFAULT_MODEL = 'mimo-v2.6-pro';
 // 预置 Key：方便这台设备开箱即用。Key 放在 ai.key.local.js（不进 git 仓库，
 // 仓库里只有 ai.key.example.js 模板）——代码包是能被反编译的，Key 不该跟着包走，
 // 更不能进 GitHub。文件不存在时留空：链路不会断，无 Key 自动走云函数中转
@@ -350,11 +350,13 @@ function readCfg() {
   try {
     const raw = wx.getStorageSync(CFG_KEY);
     if (raw && typeof raw === 'object') {
+      // 老配置里存的还是旧默认模型 flash，升级为 pro（用户手填过的其他模型不动）
+      const model = raw.model === 'mimo-v2.6-flash' ? DEFAULT_MODEL : raw.model || DEFAULT_MODEL;
       return {
         enabled: !!raw.enabled,
         baseUrl: raw.baseUrl || DEFAULT_BASE,
         key: raw.key || '',
-        model: raw.model || DEFAULT_MODEL,
+        model: model,
       };
     }
   } catch (e) {}

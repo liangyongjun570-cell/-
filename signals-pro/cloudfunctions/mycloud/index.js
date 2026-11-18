@@ -57,7 +57,7 @@ const MIMO_PATH = '/v1/chat/completions';
 function chatProxy(event) {
   if (!MIMO_KEY) return { ok: false, err: 'no-key', msg: 'mimo.key.js 缺失或为空，中转不可用' };
   const rawModel = String((event && event.model) || '');
-  const model = /^[a-zA-Z0-9._-]{1,40}$/.test(rawModel) ? rawModel : 'mimo-v2.6-flash';
+  const model = /^[a-zA-Z0-9._-]{1,40}$/.test(rawModel) ? rawModel : 'mimo-v2.6-pro';
   const msgs = (Array.isArray(event && event.messages) ? event.messages : [])
     .slice(0, 8)
     .map((m) => ({

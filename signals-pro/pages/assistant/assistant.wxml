@@ -207,10 +207,10 @@
       </view>
       <view class="as-row col">
         <text class="as-k">模型名</text>
-        <input class="as-in" value="{{apiDraft.model}}" data-k="model" bindinput="apiInput" placeholder="mimo-v2.6-flash" placeholder-class="as-ph" />
+        <input class="as-in" value="{{apiDraft.model}}" data-k="model" bindinput="apiInput" placeholder="mimo-v2.6-pro" placeholder-class="as-ph" />
       </view>
       <view class="as-note">
-        小米 MiMo（mimo-v2.6-flash）开箱即用，可自行更换接口/模型/Key。不填 Key 时走云函数中转（Key 由服务端保管，不怕扒包）。不可用时自动回退：云开发 AI → 离线引擎，不会卡住对话。自填的 Key 只保存在本机。
+        小米 MiMo（mimo-v2.6-pro）开箱即用，可自行更换接口/模型/Key。pro 推理更强、响应略慢；求快可改回 mimo-v2.6-flash。不填 Key 时走云函数中转（Key 由服务端保管，不怕扒包）。不可用时自动回退：云开发 AI → 离线引擎，不会卡住对话。自填的 Key 只保存在本机。
       </view>
       <view class="as-note warn">真机直连接口域名（如 https://api.xiaomimimo.com）需加进微信后台「开发设置 → request 合法域名」，否则直连会被拦截；被拦时会自动改走云函数中转（需已部署 mycloud 云函数）。开发工具勾选「不校验合法域名」可先跑通。</view>
       <view class="as-test" wx:if="{{apiTestMsg}}">
