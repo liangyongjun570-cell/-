@@ -1,5 +1,7 @@
 {
   "navigationStyle": "custom",
   "navigationBarTitleText": "智能助教",
-  "usingComponents": {}
+  "usingComponents": {
+    "math": "/components/math/math"
+  }
 }

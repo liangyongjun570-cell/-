@@ -12,13 +12,14 @@
 
 const cloud = require('./cloud');
 const D = require('../data/index');
+const { resolveText: mathResolveText } = require('./math');
 
 const FIRST_TIMEOUT = 12000; // 首字超时：超过就认为云端不可用
 const MAX_CHARS = 2400;
 
 const STYLE_HINT = {
   intuition: '用生活类比和物理直觉讲清楚，先给一句人话结论，再补最短的解释。避免长公式。',
-  rigorous: '从定义出发严格推导，每一步都写清依据，公式用纯文本表示（如 F(jω)=∫f(t)e^(-jωt)dt），可直接抄进答题纸。',
+  rigorous: '从定义出发严格推导，每一步都写清依据，重要公式单独成行，可直接抄进答题纸。',
   code: '给出可直接运行的 MATLAB 与 Python 代码，并用一句话点明关键函数；代码用 ``` 包起来。',
 };
 
@@ -29,7 +30,7 @@ const SYS = [
   '涉及稳定性的结论必须说明依据（极点位置 / ROC 是否含虚轴或单位圆）。',
   '若下方给出「教材相关要点」，回答优先采用其中的口径和记号。',
   '教材原文切片里没有的公式编号、页码、章节号一律不要写（如「式2-20」「教材P46」），直接给结论不标出处；切片内容与你的通用知识冲突时以切片为准。',
-  '公式用纯文本表示（如 F(jω)=∫f(t)e^(-jωt)dt），不要输出 LaTeX、Markdown 标记或 $$ 符号。',
+  '公式一律用 LaTeX 子集书写：行内公式放在 $…$ 中，重要的公式独立成行放在 $$…$$ 中（不要整段都套 $$）。只允许这些命令：\\frac{}{}、\\sqrt{}、^{}、_{}、\\int、\\sum、\\prod、\\oint、\\lim、\\text、\\mathrm，以及单个希腊字母/符号命令（\\pi \\omega \\tau \\delta \\theta \\alpha \\beta \\gamma \\lambda \\mu \\phi \\varphi \\sigma \\eta \\rho \\nu \\xi \\zeta \\kappa \\epsilon \\Delta \\Omega \\infty \\pm \\times \\cdot \\le \\ge \\ne \\approx \\to 等）。不要 \\begin 等环境，不要 Markdown 表格。',
 ].join('\n');
 
 // ---------- 本地教材要点注入 ----------
@@ -118,28 +119,51 @@ function plain(s) {
     .replace(/\*\*([^*\n]+)\*\*/g, '$1');
 }
 
+// 行内 $...$ 转日常书写体：\frac 变 a/b、^{}_{} 变上下标 Unicode、\omega 变 ω 等
+// （复用 math.js 的解析器，转不动的命令原样保留，保证不丢内容）
+function inlineMath(s) {
+  return String(s || '').replace(/\$([^$\n]+?)\$/g, (m0, body) => {
+    let t = '';
+    try {
+      t = mathResolveText(body);
+    } catch (e) {
+      t = '';
+    }
+    return t || body;
+  });
+}
+
 function toBlocks(text) {
   const out = [];
   const src = String(text || '');
-  const parts = src.split(/\n{2,}/);
-  parts.forEach((p) => {
-    const t = p.trim();
-    if (!t) return;
-    const m = t.match(/^```([a-zA-Z0-9+#]*)\s*\n([\s\S]*?)```$/);
-    if (m) {
-      out.push({ type: 'code', lang: m[1] || '', text: m[2].replace(/\s+$/, '') });
+  // 先按 $$...$$ 切出独立公式块（交给 math 组件真渲染：分式堆叠、积分限上下标）
+  const segs = src.split(/\$\$([\s\S]+?)\$\$/);
+  segs.forEach((seg, i) => {
+    if (i % 2 === 1) {
+      const f = seg.trim();
+      if (f) out.push({ type: 'math', src: f.slice(0, 600) });
       return;
     }
-    // 行内代码块（模型有时不给空行）
-    if (t.indexOf('```') === 0 && t.lastIndexOf('```') > 3) {
-      const body = t.replace(/^```[a-zA-Z0-9+#]*\s*/, '').replace(/```$/, '');
-      out.push({ type: 'code', lang: '', text: body.replace(/\s+$/, '') });
-      return;
-    }
-    const clean = plain(t);
-    out.push({ type: 'p', text: clean.length > 900 ? clean.slice(0, 900) + '…' : clean });
+    const parts = seg.split(/\n{2,}/);
+    parts.forEach((p) => {
+      const t = p.trim();
+      if (!t) return;
+      const m = t.match(/^```([a-zA-Z0-9+#]*)\s*\n([\s\S]*?)```$/);
+      if (m) {
+        out.push({ type: 'code', lang: m[1] || '', text: m[2].replace(/\s+$/, '') });
+        return;
+      }
+      // 行内代码块（模型有时不给空行）
+      if (t.indexOf('```') === 0 && t.lastIndexOf('```') > 3) {
+        const body = t.replace(/^```[a-zA-Z0-9+#]*\s*/, '').replace(/```$/, '');
+        out.push({ type: 'code', lang: '', text: body.replace(/\s+$/, '') });
+        return;
+      }
+      const clean = inlineMath(plain(t));
+      out.push({ type: 'p', text: clean.length > 900 ? clean.slice(0, 900) + '…' : clean });
+    });
   });
-  if (!out.length) out.push({ type: 'p', text: plain(src).slice(0, 300) });
+  if (!out.length) out.push({ type: 'p', text: inlineMath(plain(src)).slice(0, 300) });
   return out;
 }
 

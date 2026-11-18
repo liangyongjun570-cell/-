@@ -146,6 +146,8 @@ Page({
           const bb = { k: 'b' + i + '_' + j, type: b.type || 'p' };
           if (b.type === 'formula') {
             bb.list = engine.formulaList(b.ids);
+          } else if (b.type === 'math') {
+            bb.src = b.src || '';
           } else {
             bb.text = b.text || '';
             bb.index = b.index || 0;

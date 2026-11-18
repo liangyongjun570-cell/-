@@ -138,6 +138,9 @@
                   <math src="{{f.math}}" size="32" />
                 </view>
               </view>
+              <view class="blk-math" wx:elif="{{b.type === 'math'}}">
+                <math src="{{b.src}}" size="32" block="{{true}}" />
+              </view>
             </block>
 
             <view class="refs" wx:if="{{item.refs}}">

@@ -283,6 +283,18 @@ const askOpts = {
   ok('加粗 ** 被抹平', blocksMd[1].type === 'p' && blocksMd[1].text.indexOf('**') < 0 && /核心：翻转/.test(blocksMd[1].text), blocksMd[1]);
   ok('代码块内容不被动', blocksMd[2].type === 'code' && /conv\(f,h\)/.test(blocksMd[2].text));
 
+  // ---------- 5.5 公式书写化：$$...$$ 独立公式块 + 行内 $...$ 转书写体 ----------
+  {
+    const bF = ai.toBlocks('推导如下：\n\n$$y(t)=f(t)*h(t)=\\int_{-\\infty}^{\\infty} f(\\tau)h(t-\\tau)d\\tau$$\n\n结论见上。');
+    ok('$$ 公式独立成 math 块', bF.some((b) => b.type === 'math' && b.src.indexOf('\\int') >= 0 && b.src.indexOf('\\tau') >= 0), bF.map((b) => b.type));
+    ok('公式块前后文本保留', bF[0].type === 'p' && /推导如下/.test(bF[0].text) && bF[bF.length - 1].type === 'p' && /结论见上/.test(bF[bF.length - 1].text));
+    const bInline = ai.toBlocks('其中 $e^{j\\omega t}$ 是复指数，$\\frac{1}{2\\pi}$ 为系数。');
+    ok('行内 $...$ 转书写体（\\omega 变 ω）', bInline[0].type === 'p' && bInline[0].text.indexOf('ω') >= 0 && bInline[0].text.indexOf('$') < 0, bInline[0].text);
+    ok('行内分式转 a/b', bInline[0].text.indexOf('1/2π') >= 0, bInline[0].text);
+    const bPlain = ai.toBlocks('没有公式的普通回答。');
+    ok('无公式文本不受影响', bPlain[0].type === 'p' && /普通回答/.test(bPlain[0].text));
+  }
+
   // ---------- 6. 空存储回落预置配置（小米），按有无 Key 文件分流 ----------
   store['ssp_api_cfg'] = '';
   reqHandler = (opt) => opt.success({ statusCode: 200, data: { choices: [{ message: { content: 'ok' } }] } });

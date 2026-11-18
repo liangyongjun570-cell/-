@@ -650,6 +650,15 @@
   overflow-x: auto;
 }
 
+/* AI 独立公式块（LaTeX 子集渲染） */
+.blk-math {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+}
+
 .fm-row {
   padding: 3px 0;
 }
