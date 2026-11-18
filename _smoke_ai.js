@@ -29,10 +29,13 @@ global.wx = {
     if (reqHandler) reqHandler(opt);
   },
   cloud: {
+    init: () => {},
     callFunction: (opt) => {
       cloudLog.push(opt);
       if (cloudHandler) cloudHandler(opt);
-      else opt.fail({ errMsg: 'cloud.callFunction:fail env not exist' });
+      // 默认 fail 用 net 类错误（不触发 cloud.js 的 no-env 熔断，否则 rag 失败一次
+      // 会把整个云能力关掉，后续用例的 RAG/中转全部静默短路）
+      else opt.fail({ errMsg: 'cloud.callFunction:fail' });
     },
   },
 };
@@ -202,6 +205,10 @@ const askOpts = {
   // 直连被拦 -> 自动改走云函数中转（不受白名单限制）
   {
     cloudHandler = (opt) => {
+      if (opt.data && opt.data.action === 'rag') {
+        opt.success({ result: { ok: true, list: [] } });
+        return;
+      }
       ok('中转发到 mycloud 的 chat 动作', opt.name === 'mycloud' && opt.data.action === 'chat', opt.data && opt.data.action);
       ok('中转带完整消息与模型名', Array.isArray(opt.data.messages) && opt.data.messages.length === 6 && opt.data.model === 'deepseek-chat', opt.data && opt.data.model);
       opt.success({ result: { ok: true, text: '经中转的回答' } });
@@ -209,7 +216,8 @@ const askOpts = {
     const rProxy = await runRemote((opt) => opt.fail({ errMsg: 'request:fail url not in domain list' }), askOpts);
     ok('直连被拦时经云函数中转成功', rProxy.r.ok === true && rProxy.r.via === 'cloud' && /中转的回答/.test(rProxy.r.text), rProxy.r);
     ok('中转结果解析成 blocks', rProxy.r.blocks.some((b) => b.type === 'p' && /中转的回答/.test(b.text)), rProxy.r.blocks);
-    cloudHandler = (opt) => opt.fail({ errMsg: 'cloud.callFunction:fail env not exist' });
+    // net 类 fail（no-env 会熔断云能力，破坏后续 RAG 用例）
+    cloudHandler = (opt) => opt.fail({ errMsg: 'cloud.callFunction:fail' });
     const rBoth = await runRemote((opt) => opt.fail({ errMsg: 'request:fail url not in domain list' }), askOpts);
     ok('中转也不可用时保留直连错误', rBoth.r.ok === false && rBoth.r.err === 'domain' && /domain list/.test(rBoth.r.msg) && /中转/.test(rBoth.r.msg), rBoth.r);
     cloudHandler = null;
@@ -311,11 +319,41 @@ const askOpts = {
       : null;
     const sysText = sysMsg ? sysMsg.content : '';
     ok('remote 注入教材相关要点', !!sysText && sysText.indexOf('教材相关要点') >= 0, sysText ? sysText.length : 'no-sys');
-    ok('注入要点总量有上限（system 不超 1800 字）', !!sysText && sysText.length < 1800, sysText && sysText.length);
+    ok('注入要点总量有上限（system 不超 3200 字）', !!sysText && sysText.length < 3200, sysText && sysText.length);
     ok('推导题不再被 320 字上限卡死', !!sysText && sysText.indexOf('完整步骤') >= 0);
     ok('推导题要求逐步写明依据', !!sysText && sysText.indexOf('性质/定理') >= 0);
     ok('输出上限提到 1400', rRef.ok && reqLog[before].data.max_tokens === 1400, reqLog[before].data.max_tokens);
     ok('采样 temperature=0.4', rRef.ok && reqLog[before].data.temperature === 0.4, reqLog[before].data.temperature);
+  }
+
+  // ---------- 6.6 教材知识库切片注入（云端 RAG -> 主路径 system prompt） ----------
+  {
+    const before = reqLog.length;
+    const cloudBefore = cloudLog.length;
+    reqHandler = (opt) => opt.success({ statusCode: 200, data: { choices: [{ message: { content: 'ok' } }] } });
+    cloudHandler = (opt) => {
+      if (opt.data && opt.data.action === 'rag') {
+        opt.success({
+          result: {
+            ok: true,
+            list: [
+              { text: '卷积积分的定义：f(t)与h(t)的卷积等于冲激响应加权的叠加积分。', ch: '第3章', title: '系统的时域分析' },
+              { text: '卷积的图解法分四步：换元、翻转、平移、积分。', ch: '第3章', title: '卷积积分' },
+            ],
+          },
+        });
+      } else {
+        opt.success({ result: { ok: true, text: 'ok' } });
+      }
+    };
+    const rRag = await ai.remote(CFG, { q: '卷积积分怎么算？', style: 'rigorous', history: [] });
+    const sys2 = rRag.ok && reqLog[before] && reqLog[before].data ? reqLog[before].data.messages.filter((m) => m.role === 'system')[0] : null;
+    const sys2Text = sys2 ? sys2.content : '';
+    ok('RAG 命中时 remote 注入教材原文切片', !!sys2Text && sys2Text.indexOf('教材原文切片') >= 0, sys2Text ? sys2Text.length : 'no-sys');
+    ok('切片正文进入 system（卷积定义）', sys2Text.indexOf('冲激响应加权的叠加积分') >= 0);
+    ok('切片带章节标注（第3章）', sys2Text.indexOf('第3章') >= 0);
+    ok('RAG 关键词命中（rag 动作被调用）', cloudLog.slice(cloudBefore).some((c) => c.data && c.data.action === 'rag' && Array.isArray(c.data.keywords) && c.data.keywords.length > 0));
+    cloudHandler = null;
   }
 
   // ---------- 7. 回答来源标注：via 穿透消息重建白名单（页面层） ----------

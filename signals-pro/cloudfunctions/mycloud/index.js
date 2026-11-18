@@ -306,7 +306,7 @@ exports.main = async (event) => {
       const res = await db
         .collection(COL_CHUNK)
         .where({ text: db.RegExp({ regexp: re, options: 'i' }) })
-        .limit(3)
+        .limit(4)
         .field({ text: true, ch: true, title: true })
         .get();
       return { ok: true, list: res.data || [] };

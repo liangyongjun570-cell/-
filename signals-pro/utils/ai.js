@@ -74,7 +74,7 @@ function dict() {
     push(c.name);
     (c.topics || []).forEach((t) => push(t.name));
   });
-  ['卷积', '傅里叶', '拉普拉斯', 'z变换', '采样', '混叠', '极点', '零点', '稳定', '冲激', '阶跃', '频谱', '带宽', '系统函数'].forEach(push);
+  ['卷积', '卷积积分', '卷积和', '傅里叶级数', '傅里叶变换', 'Fourier', '拉普拉斯变换', '拉氏变换', 'z变换', 'Z变换', '采样', '抽样', '抽样定理', '奈奎斯特', '混叠', '极点', '零点', '稳定', '稳定性', '冲激响应', '脉冲响应', '阶跃响应', '零输入响应', '零状态响应', '频谱', '带宽', '系统函数', '频率响应', '微分方程', '差分方程', '齐次解', '特解', '收敛域', '部分分式', '留数法', '能量信号', '功率信号', '周期信号', '非周期信号', '无失真传输', '理想滤波器', '狄利克雷', '吉布斯', '初值定理', '终值定理', '单位冲激', '单位阶跃', '离散信号', '连续信号'].forEach(push);
   _dict = Object.keys(set);
   return _dict;
 }
@@ -468,16 +468,26 @@ function remote(cfg, opts) {
       resolve({ ok: false, err: 'empty' });
       return;
     }
-    let sys = SYS;
-    if (opts && opts.ctx && opts.ctx.label) sys += '\n当前页面：' + opts.ctx.label + '。';
-    if (opts && STYLE_HINT[opts.style]) sys += '\n回答风格要求：' + STYLE_HINT[opts.style];
-    const refs = localRefs(q);
-    if (refs) sys += '\n教材相关要点（优先采用这些口径）：\n' + refs;
-    const msgs = [{ role: 'system', content: sys }];
-    ((opts && opts.history) || []).slice(-4).forEach((h) => {
-      if (h && h.role && h.text) msgs.push({ role: h.role, content: String(h.text).slice(0, 400) });
-    });
-    msgs.push({ role: 'user', content: q });
+    // 教材知识库切片（云端 RAG）：未开云开发/无命中时立即返回空数组，零网络零延迟
+    rag(q).then((chunks) => {
+      chunks = chunks || [];
+      let sys = SYS;
+      if (opts && opts.ctx && opts.ctx.label) sys += '\n当前页面：' + opts.ctx.label + '。';
+      if (opts && STYLE_HINT[opts.style]) sys += '\n回答风格要求：' + STYLE_HINT[opts.style];
+      const refs = localRefs(q);
+      if (refs) sys += '\n教材相关要点（优先采用这些口径）：\n' + refs;
+      if (chunks.length) {
+        sys +=
+          '\n教材原文切片（回答必须优先依据这些内容，与通用知识冲突时以切片为准）：\n' +
+          chunks
+            .map((ck, i) => '[切片' + (i + 1) + (ck.ch ? ' · ' + ck.ch : '') + '] ' + String(ck.text || '').slice(0, 400))
+            .join('\n');
+      }
+      const msgs = [{ role: 'system', content: sys }];
+      ((opts && opts.history) || []).slice(-4).forEach((h) => {
+        if (h && h.role && h.text) msgs.push({ role: h.role, content: String(h.text).slice(0, 400) });
+      });
+      msgs.push({ role: 'user', content: q });
 
     // 没配 Key 或地址：不直连，直接走云函数中转（Key 在服务端，白名单也拦不住）
     if (!url || !c.key) {
@@ -552,6 +562,7 @@ function remote(cfg, opts) {
           resolve({ ok: false, err: err, msg: msg + (r2.msg ? '；云函数中转也不可用：' + r2.msg : '') });
         });
       },
+    });
     });
   });
 }
